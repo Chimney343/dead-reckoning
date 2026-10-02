@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Data payloads: track only the folder skeleton, registry and per-source READMEs
+data/raw/*/*
+data/derived/*/*
+!data/raw/*/.gitkeep
+!data/derived/*/.gitkeep
+!data/raw/*/README.md
+!data/derived/*/README.md

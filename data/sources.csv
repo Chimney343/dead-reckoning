@@ -1,0 +1,44 @@
+slug,name,themes,tier,licence,access,url,notes
+threedecks,Three Decks,events,T2,All rights reserved,permission,https://threedecks.org/,No export; ask owner (Cy Harrison) before extracting events
+wikidata,Wikidata (SPARQL via QLever),events;battles,T3,CC0,open,https://qlever.dev/api/wikidata,2042 items carry Three Decks ID (P11085); run the coverage query from an unrestricted machine first
+wikipedia,"Wikipedia lists (Spanish ships of the line, naval battles, shipwrecks by year, es annexes)",events;battles;wrecks,T3,CC BY-SA 4.0,open,https://en.wikipedia.org/wiki/List_of_ships_of_the_line_of_Spain,No coordinates except sparse shipwreck-list entries; es annexes unverified
+prize-papers,Prize Papers portal,events,T1,Open access stated,unverified,https://portal.prizepapers.de/index/,Portal returned 403; export and API untested
+lloyds-list,Lloyd's List 1741-1826,events,T1,None stated,open,https://archive.org/details/lloydslist17411800farn,Scanned facsimile with OCR; needs manual extraction
+todo-a-babor,Todo a Babor Spanish loss lists,events,T2,None stated,open,https://www.todoababor.es/historia/navios-de-linea-y-fragatas-espanolas-perdidos-ademas-buques-apresados-extranjeros-agregados-a-real-armada/,Apresado/destruido/incendiado 1796-1801 and 1804-1808; also reverse list of British ships taken by Spain
+slavevoyages,SlaveVoyages Trans-Atlantic database,events;gazetteer,T1,Public domain; imputed fields CC BY-NC 3.0 US,open,https://legacy.slavevoyages.org/blog/downloads-trans-atlantic,FATE 10-13 = captured by British; ports CSV with lat/long not yet opened
+ireland-wiid,Wreck Inventory of Ireland (WIID),wrecks,T1,CC BY 4.0,open,https://data.gov.ie/dataset/national-monuments-service-wreck-inventory-of-ireland,18000+ sites; column names unverified
+ireland-infomar,INFOMAR Shipwrecks,wrecks,T1,CC BY 4.0,open,https://data.gov.ie/en_GB/dataset/infomar-shipwrecks,480+ surveyed wrecks; no cause or flag
+noaa-wrecks-obstructions,NOAA Wrecks and Obstructions,wrecks,T1,Not stated,open,https://www.fisheries.noaa.gov/inport/item/70439,US waters; yearSunk only
+noaa-awois,NOAA AWOIS (legacy),wrecks,T1,Not stated,open,https://www.fisheries.noaa.gov/inport/item/39961,MS Access MDB; HISTORY free text for cause classification
+hawaii-wrecks,Hawaii Wrecks,wrecks,T1,No licence provided,open,https://opendata.hawaii.gov/dataset/wrecks/resource/7d023e43-0fb5-4214-b264-9038189437de,Charted wrecks only
+ukho-wrecks,UKHO wrecks,wrecks,T1,OGL,open,https://www.admiralty.co.uk/access-data/marine-data,94000+ records; file format not stated
+canmore,Canmore NRHE maritime records,wrecks,T1,OGL,open,https://spatialdata.gov.scot/geonetwork/srv/api/records/7a88a997-9a9b-4afb-8e92-2b04f8178aab,Scotland; wreck vs casualty class
+emodnet-shipwrecks,EMODnet Heritage Shipwrecks,wrecks,T1,CC BY 4.0,open,https://emodnet.ec.europa.eu/geonetwork/emodnet/api/records/e965088b-a265-4517-84df-c49b156af8a7,Sinking year; cause not stated
+he-protected-wrecks,Historic England Protected Wreck Sites,wrecks,T1,OGL v3.0,open,https://www.data.gov.uk/dataset/5bdf0248-1097-49f7-b010-d3c378888ddf/protected-wreck-sites-gis-data,Designated sites only (polygons)
+ni-wrecks,Northern Ireland Wrecks,wrecks,T1,Not set,open,https://www.data.gov.uk/dataset/7ed7a6bd-7d34-428a-a713-5d73272b6fbe/northern-ireland-wrecks-database,Distributed via Unpath'd Waters
+novascotia-shipwrecks,Nova Scotia Marine Heritage Shipwrecks,wrecks,T1,NS Open Government Licence,open,https://data.novascotia.ca/Arts-Culture-and-History/Marine-Heritage-Shipwrecks-Database/rq3a-h5hk,Has voyage_from/voyage_to/cause_of_event; location is text only
+wa-shipwrecks,Western Australia Shipwrecks (WAM-002),wrecks,T1,CC BY 4.0,registration,https://catalogue.data.wa.gov.au/dataset/shipwrecks,Login needed for downloads
+zenodo-shipwrecks,Zenodo shipWrecks.csv,wrecks,T3,CC BY 4.0,open,https://zenodo.org/records/7347768,Wikipedia-derived
+wales-maritime,RCAHMW maritime dataset (DataMapWales),wrecks,T1,Not stated,registration,https://rcahmw.gov.uk/ships-wrecks-and-documentary-sources/,Layer page showed sign-in; unverified
+cliopatria,Cliopatria,colonial,T1,CC BY 4.0,open,https://github.com/Seshat-Global-History-Databank/cliopatria,Single GeoJSON with FromYear/ToYear; any-year snapshots
+historical-basemaps,historical-basemaps,colonial,T1,GPL-3.0,open,https://github.com/aourednik/historical-basemaps,SUBJECTO colonizer field; 11 snapshots 1492-1815 then 1878
+hgis-indias,HGIS de las Indias,colonial;ports;routes;gazetteer,T1,Custom non-commercial; boundary lines CC BY-NC-SA 4.0,unverified,https://www.hgis-indias.net/,"Jurisdictions 1701-1808, gazetteer, ports, consulados, flotas y galeones routes; Dataverse terms unverified"
+newberry-ahcb,Newberry Atlas of Historical County Boundaries,colonial,T1,Conflicting (CC BY-NC-SA vs any lawful purpose),open,https://publications.newberry.org/ahcb/downloads/united_states.html,US counties from 1629 with day-level change events
+coldat,COLDAT colonial dates,colonial,T1,CC0 1.0,open,https://api.datacite.org/dois/10.7910/DVN/T9SDEW,No geometry; join to modern countries
+cliwoc,CLIWOC 2.1 ship logbooks,routes;events,T1,CC BY 3.0 (PANGAEA); CC0 (DANS and Kaggle copies),open,https://doi.pangaea.de/10.1594/PANGAEA.611088,"Daily noon positions 1754-1855; keep each copy (PANGAEA, Ottens GPKG, Kaggle) in its own subfolder; WarsAndFights fields"
+icoads,ICOADS R3,routes,T1,CC BY 4.0,registration,https://gdex.ucar.edu/datasets/d548000/,Very large; from 1662
+noaa-eic-logbooks,NOAA English East India Company logbooks,routes,T1,Free; NOAA disclaimer,open,https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00785,About 893 logbooks with daily noon lat/lon
+dutch-asiatic-shipping,Dutch-Asiatic Shipping,routes,T1,None stated,unverified,https://resources.huygens.knaw.nl/das/voyages,Sources disagree on whether CSV download exists
+stro-sound-toll,STRO 2.0 Sound Toll Registers,routes;trade,T1,CC BY 4.0,open,https://figshare.com/articles/dataset/STRO_2_0_-_Re-engineered_data_from_Sound_Toll_Registers_Online/27176202,18 CSVs about 1.6 GB; departure and destination names
+navigocorpus,Navigocorpus,routes,T1,Not stated,registration,https://navigocorpus.huma-num.fr/,Guest login; port calls
+portic,PORTIC,routes;gazetteer,T1,Code AGPL v3; data not stated,open,https://anr.portic.fr/en/news-of-developments/,REST API; 1787 and 1789 only
+manila-galleon,Manila Galleon records (NOAA),routes,T1,Cite DOI,open,https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=noaa-historical-5413,PDF/DOC tables; coverage years conflict
+reshare-ew-ports-routes,England and Wales ports and routes (ReShare 853711),routes;ports,T1,Conflicting (CC BY-SA 4.0 vs CC BY 4.0),open,https://reshare.ukdataservice.ac.uk/853711/,Only true route shapefiles found; 479 ports
+historical-sea-routing,Historical_Sea_Routing,routes,T3,CC BY-NC 4.0,open,https://github.com/docuracy/Historical_Sea_Routing,Simulated routes
+ibm-maritime-archives,IBM chuk-mcp-maritime-archives,routes,T3,Apache 2.0; underlying sources mostly unspecified,open,https://github.com/IBM/chuk-mcp-maritime-archives,18 modelled routes; about 261000 positions
+toflit18,TOFLIT18 French trade flows,trade,T1,ODbL,open,https://zenodo.org/records/13749501,500000+ flows 1716-1821; not geocoded
+ricardo,RICardo,trade,T1,ODbL,open,https://github.com/medialab/ricardo_data,Thin before 1820
+federico-tena,Federico-Tena World Trade Historical Database,trade,T1,None stated,open,https://www.uc3m.es/ss/Satellite/UC3MInstitucional/es/TextoMixta/1371246237481/Federico-Tena_World_Trade_Historical_Database,Polity level from 1800
+combined-slave-voyages,Database of combined slave trade voyages,trade,,MIT,open,https://github.com/revans011/database-of-combined-slave-trade-voyages,Only named in the conflicts table; contents not reviewed
+whg,World Historical Gazetteer datasets,gazetteer,,Mostly unrecorded; WHG additions CC BY 4.0,open,https://whgazetteer.org/,"Datasets 12 (Old World Trade), 1245 (Viabundus), 819 (VOC/WIC), 657 (African Ports), 15 (HGIS territories)"
+globalise-voc-places,GLOBALISE VOC places,gazetteer,T1,CC BY 4.0,open,https://zenodo.org/records/13341556,
