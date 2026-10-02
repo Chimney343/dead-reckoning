@@ -1,0 +1,18 @@
+{
+  "id": 27176202,
+  "title": "STRO 2.0 - Re-engineered data from Sound Toll Registers Online",
+  "files": [
+    {
+      "id": 49710771,
+      "name": "cargoes_measurement.csv",
+      "size": 227030264,
+      "download_url": "https://ndownloader.figshare.com/files/49710771"
+    },
+    {
+      "id": 49710772,
+      "name": "shipmaster.csv",
+      "size": 4096,
+      "download_url": "https://ndownloader.figshare.com/files/49710772"
+    }
+  ]
+}

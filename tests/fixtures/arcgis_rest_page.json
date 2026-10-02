@@ -1,0 +1,6 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"name": "Batavia"}, "geometry": {"type": "Point", "coordinates": [114.0, -28.0]}}
+  ]
+}

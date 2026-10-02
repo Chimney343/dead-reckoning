@@ -1,0 +1,24 @@
+{
+  "status": "OK",
+  "data": {
+    "latestVersion": {
+      "versionNumber": 1,
+      "files": [
+        {
+          "dataFile": {
+            "id": 3385666,
+            "filename": "puertos-metadata.txt",
+            "contentType": "text/plain"
+          }
+        },
+        {
+          "dataFile": {
+            "id": 3385667,
+            "filename": "puertos.zip",
+            "contentType": "application/zip"
+          }
+        }
+      ]
+    }
+  }
+}

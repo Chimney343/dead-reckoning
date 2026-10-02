@@ -1,0 +1,12 @@
+{
+  "id": 7347768,
+  "doi": "10.5281/zenodo.7347768",
+  "metadata": {"version": null},
+  "files": [
+    {
+      "key": "shipWrecks.csv",
+      "size": 749568,
+      "links": {"self": "https://zenodo.org/api/records/7347768/files/shipWrecks.csv/content"}
+    }
+  ]
+}

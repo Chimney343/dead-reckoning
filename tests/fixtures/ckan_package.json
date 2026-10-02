@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "result": {
+    "name": "wrecks",
+    "resources": [
+      {
+        "name": "Wrecks SHP",
+        "format": "SHP",
+        "url": "https://example.org/wrecks.zip"
+      },
+      {
+        "name": "Wrecks CSV",
+        "format": "CSV",
+        "url": "https://example.org/wrecks.csv"
+      }
+    ]
+  }
+}

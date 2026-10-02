@@ -1,0 +1,849 @@
+# Source manifest for `python -m fetch`.
+#
+# `id` is the unique logical source id used by --id. `dest` is the folder under
+# data/raw/ (defaults to id); `subdir` nests an entry inside a shared source
+# folder. `resolver` is a key in fetch/resolvers or fetch/harvesters.
+#
+# status: verified (a concrete file/list was checked) | manual | skip.
+# redistribute: false for NC licences, "do not redistribute" or unknown terms.
+# large: true means the source is fetched only with --large.
+
+# ------------------------------------------------------------------ captures
+- id: prize-papers
+  group: captures
+  title: Prize Papers portal (Goobi viewer)
+  resolver: prizepapers
+  url: https://portal.prizepapers.de/api/v1/
+  licence: Metadata terms unstated; images research-only
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 20000000
+  rate_limit: 1.0
+  notes: "Fetch metadata only. robots.txt disallows /search/ and /oai; use /api/v1/index/query/."
+
+- id: wikidata
+  group: captures
+  title: Wikidata ships and battles (WDQS, QLever fallback)
+  resolver: wikidata
+  url: https://query.wikidata.org/sparql
+  licence: CC0-1.0
+  tier: T3
+  status: verified
+  redistribute: true
+  approx_bytes: 50000000
+  rate_limit: 1.0
+  notes: "Requires DR_CONTACT. Writes p11085.csv join-key file for the Three Decks agent."
+
+- id: wp-en-lists
+  group: captures
+  title: "en.wikipedia: Spanish ships of the line; list of naval battles"
+  resolver: wikipedia
+  url: https://en.wikipedia.org/w/api.php
+  dest: wikipedia
+  subdir: en-lists
+  licence: CC-BY-SA-4.0
+  tier: T3
+  status: verified
+  redistribute: true
+  params:
+    wiki: en
+    titles:
+      - List of ships of the line of Spain
+      - List of naval battles
+
+- id: wp-en-shipwrecks
+  group: captures
+  title: en.wikipedia yearly/decadal shipwreck lists, 1650-1860
+  resolver: wikipedia
+  url: https://en.wikipedia.org/w/api.php
+  dest: wikipedia
+  subdir: en-shipwrecks
+  licence: CC-BY-SA-4.0
+  tier: T3
+  status: verified
+  redistribute: true
+  params:
+    wiki: en
+    category: Category:Lists of shipwrecks by year
+    min_year: 1650
+    max_year: 1860
+
+- id: wp-es-anexos
+  group: captures
+  title: "es.wikipedia annexes: navios de linea, fragatas"
+  resolver: wikipedia
+  url: https://es.wikipedia.org/w/api.php
+  dest: wikipedia
+  subdir: es-anexos
+  licence: CC-BY-SA-4.0
+  tier: T3
+  status: verified
+  redistribute: true
+  params:
+    wiki: es
+    titles:
+      - "Anexo:Navios de linea de la Armada Espanola"
+      - "Anexo:Fragatas a vela de la Armada Espanola"
+
+- id: todo-a-babor
+  group: captures
+  title: Todo a Babor Spanish loss list and reverse list
+  resolver: todoababor
+  dest: todo-a-babor
+  urls:
+    - https://www.todoababor.es/historia/navios-de-linea-y-fragatas-espanolas-perdidos-ademas-buques-apresados-extranjeros-agregados-a-real-armada/
+    - https://www.todoababor.es/historia/buques-guerra-britanicos-apresados-espanoles/
+  licence: None stated
+  tier: T2
+  status: verified
+  redistribute: false
+  approx_bytes: 300000
+
+- id: slavevoyages
+  group: captures
+  title: SlaveVoyages Trans-Atlantic export and codebooks
+  resolver: direct
+  dest: slavevoyages
+  urls:
+    - https://legacy.slavevoyages.org/documents/download/tastdb-exp-2019.csv
+    - https://www.slavevoyages.org/static/uploads/SPSS_Codebook_2019.pdf
+    - https://www.slavevoyages.org/static/uploads/SPSS_Codebook_2023-11-06.pdf
+  licence: Public domain; imputed fields CC-BY-NC-3.0-US
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 25000000
+  notes: "FATE 10-13 = captured by Britain; NATIONAL holds the flag."
+
+- id: slavevoyages-sav
+  group: captures
+  title: SlaveVoyages Trans-Atlantic SPSS file (optional)
+  resolver: direct
+  url: https://legacy.slavevoyages.org/documents/download/tastdb-exp-2020.sav
+  dest: slavevoyages
+  subdir: spss
+  licence: Public domain; imputed fields CC-BY-NC-3.0-US
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 31000000
+
+- id: lloyds-list
+  group: captures
+  title: Lloyd's List 1741-1800 (Internet Archive OCR)
+  resolver: direct
+  url: https://archive.org/download/lloydslist17411800farn/lloydslist17411800farn_djvu.txt
+  dest: lloyds-list
+  licence: None stated
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 1800000
+
+- id: lloyds-list-pdf
+  group: captures
+  title: Lloyd's List 1741-1800 (Internet Archive PDF)
+  resolver: direct
+  url: https://archive.org/download/lloydslist17411800farn/lloydslist17411800farn.pdf
+  dest: lloyds-list
+  subdir: pdf
+  licence: None stated
+  tier: T1
+  status: verified
+  redistribute: false
+  large: true
+  approx_bytes: 27000000
+
+- id: cdb90
+  group: captures
+  title: CDB90 battles
+  resolver: github
+  url: https://github.com/jrnold/CDB90
+  licence: ODC-BY
+  tier: T2
+  status: verified
+  redistribute: true
+  approx_bytes: 2000000
+
+- id: combined-slave-voyages
+  group: captures
+  title: Database of combined slave trade voyages
+  resolver: github
+  url: https://github.com/revans011/database-of-combined-slave-trade-voyages
+  licence: MIT
+  tier: T3
+  status: verified
+  redistribute: true
+  approx_bytes: 5000000
+  notes: "Optional; contents not reviewed."
+
+- id: brecke
+  group: captures
+  title: Brecke Conflict Catalog
+  resolver: direct
+  url: https://c14750.wpmucdn.com/19/files/2018/09/Notes-about-Conflict-Catalog.pdf?bid=19
+  licence: None stated
+  tier: T2
+  status: skip
+  redistribute: false
+  notes: "Only the notes PDF has a live URL; the Excel catalog has none. Research notes judge it unusable."
+
+- id: hcd-codebook
+  group: captures
+  title: Historical Conflict Dataset codebook
+  resolver: direct
+  url: https://www.su.se/download/18.6f0acc5f19a7bc9dc1f1f87d/1763742572230/HCD%20codebookHCD_codebook_v1.pdf
+  licence: Not stated
+  tier: T2
+  status: skip
+  redistribute: false
+  notes: "Unfetchable during research; no verified URL."
+
+# -------------------------------------------------------------------- wrecks
+- id: ireland-wiid
+  group: wrecks
+  title: Wreck Inventory of Ireland (WIID)
+  resolver: direct
+  url: https://www.arcgis.com/sharing/rest/content/items/d4b084c880b546fabe38345461b563d2/data
+  filename: wiid.csv
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 6000000
+  notes: "DD_Lat/DD_Long == 0 means no location."
+
+- id: ireland-infomar
+  group: wrecks
+  title: INFOMAR shipwrecks
+  resolver: direct
+  url: https://gsi.geodata.gov.ie/downloads/Marine/Data/Downloads/Shapefiles/IE_GSI_MI_Shipwrecks_IE_Waters_WGS84_LAT.zip
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 1100000
+
+- id: novascotia-shipwrecks
+  group: wrecks
+  title: Nova Scotia Marine Heritage Shipwrecks
+  resolver: socrata
+  url: https://data.novascotia.ca/api/views/rq3a-h5hk/rows.csv?accessType=DOWNLOAD
+  filename: novascotia-shipwrecks.csv
+  licence: NS-Open-Government-Licence
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 425000
+  notes: "Has voyage_from/voyage_to/cause_of_event; location is text only."
+
+- id: wa-shipwrecks
+  group: wrecks
+  title: Western Australia shipwrecks (WAM-002, via ArcGIS REST)
+  resolver: arcgis_rest
+  url: https://public-services.slip.wa.gov.au/public/rest/services/SLIP_Public_Services/People_and_Society/MapServer/0/query
+  filename: wa-shipwrecks.geojson
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  params:
+    where: "1=1"
+    out_fields: "*"
+    page_size: 1000
+  notes: "REST query works without login; file downloads need one."
+
+- id: hawaii-wrecks
+  group: wrecks
+  title: Hawaii wrecks (CSV via CKAN)
+  resolver: ckan
+  url: https://opendata.hawaii.gov/api/3/action/package_show?id=wrecks
+  filename: hawaii-wrecks.csv
+  dest: hawaii-wrecks
+  licence: No licence provided
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 100000
+  params:
+    format: CSV
+
+- id: hawaii-wrecks-shp
+  group: wrecks
+  title: Hawaii wrecks (shapefile)
+  resolver: direct
+  url: https://files.hawaii.gov/dbedt/op/gis/data/wrecks.shp.zip
+  dest: hawaii-wrecks
+  subdir: shp
+  licence: No licence provided
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 90000
+
+- id: ukho-wrecks
+  group: wrecks
+  title: UKHO wrecks and obstructions (External Export, Excel)
+  resolver: arcgis_portal
+  url: https://datahub.admiralty.co.uk/portal/sharing/rest/content/items/1aa31582b285461f81518007eeed9963/data
+  filename: ukho-wrecks.xlsx
+  dest: ukho-wrecks
+  licence: OGL
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 150000
+
+- id: ukho-wrecks-shp
+  group: wrecks
+  title: UKHO wrecks and obstructions (shapefiles)
+  resolver: arcgis_portal
+  url: https://datahub.admiralty.co.uk/portal/sharing/rest/content/items/4dbf2ace22bf4f9785fb445d0593bc2c/data
+  filename: ukho-wrecks-shp.zip
+  dest: ukho-wrecks
+  subdir: shp
+  licence: OGL
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 25000000
+
+- id: ukho-wrecks-extra
+  group: wrecks
+  title: UKHO wrecks additional export
+  resolver: arcgis_portal
+  url: https://datahub.admiralty.co.uk/portal/sharing/rest/content/items/60c0908526b844a68494c038a457e1a7/data
+  filename: ukho-wrecks-extra.zip
+  dest: ukho-wrecks
+  subdir: extra
+  licence: OGL
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 19000000
+
+- id: canmore
+  group: wrecks
+  title: Canmore NRHE points (all heritage)
+  resolver: direct
+  url: http://inspire.hes.scot/AtomService/DATA/Canmore_Points.zip
+  licence: OGL
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 36000000
+  notes: "Filter to maritime records downstream."
+
+- id: emodnet-shipwrecks
+  group: wrecks
+  title: EMODnet Heritage Shipwrecks (WFS)
+  resolver: direct
+  url: https://ows.emodnet-humanactivities.eu/wfs?service=WFS&version=2.0.0&request=GetFeature&typeName=emodnet:heritageshipwrecks&outputFormat=application/json
+  filename: emodnet-shipwrecks.geojson
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 8000000
+  notes: "Layer emodnet:heritageshipwrecks holds 7,073 features."
+
+- id: zenodo-shipwrecks
+  group: wrecks
+  title: Zenodo shipWrecks.csv
+  resolver: zenodo
+  url: https://zenodo.org/api/records/7347768
+  licence: CC-BY-4.0
+  tier: T3
+  status: verified
+  redistribute: true
+  approx_bytes: 750000
+
+- id: noaa-wrecks-obstructions
+  group: wrecks
+  title: NOAA Wrecks and Obstructions (MarineCadastre)
+  resolver: direct
+  url: https://marinecadastre.gov/data/
+  licence: Not stated
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "No dedicated layer in the MarineCadastre DCAT feed; download the wrecks/obstructions dataset by hand from hub.marinecadastre.gov."
+
+- id: noaa-awois
+  group: wrecks
+  title: NOAA AWOIS legacy (MDB)
+  resolver: direct
+  url: https://www.fisheries.noaa.gov/inport/item/39961
+  licence: Not stated
+  tier: T1
+  status: skip
+  redistribute: false
+  notes: "InPort returns 403; no public bulk file found."
+
+- id: he-protected-wrecks
+  group: wrecks
+  title: Historic England Protected Wreck Sites
+  resolver: direct
+  url: https://www.data.gov.uk/dataset/5bdf0248-1097-49f7-b010-d3c378888ddf/protected-wreck-sites-gis-data
+  licence: OGL-3.0
+  tier: T1
+  status: manual
+  redistribute: true
+  notes: "Data-downloads page returns 403 to scripts; download the shapefile zip in a browser."
+
+- id: ni-wrecks
+  group: wrecks
+  title: Northern Ireland wrecks
+  resolver: direct
+  url: https://www.data.gov.uk/dataset/7ed7a6bd-7d34-428a-a713-5d73272b6fbe/northern-ireland-wrecks-database
+  licence: Not set
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "Reachable only through the Unpath'd Waters portal; export if allowed."
+
+# ------------------------------------------------------------------ colonial
+- id: cliopatria
+  group: colonial
+  title: Cliopatria
+  resolver: github
+  url: https://github.com/Seshat-Global-History-Databank/cliopatria/raw/main/cliopatria.geojson.zip
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 44000000
+  notes: "Record the commit SHA in the provenance note when known."
+
+- id: historical-basemaps
+  group: colonial
+  title: historical-basemaps
+  resolver: github_index
+  url: https://raw.githubusercontent.com/aourednik/historical-basemaps/master/index.json
+  licence: GPL-3.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 50000000
+  params:
+    max_year: 1880
+  notes: "GPL-3.0: keep derived geometries separate from CC-BY layers."
+
+- id: hgis-ports
+  group: colonial
+  title: HGIS Puertos 1701-1808
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/UXDJLQ"
+  dest: hgis-indias
+  subdir: ports
+  licence: CC-BY-NC-SA-4.0
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 50000
+
+- id: hgis-territorios
+  group: colonial
+  title: HGIS territorial gazetteer v4
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/YPEU5E"
+  dest: hgis-indias
+  subdir: territorios
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 213000000
+
+- id: hgis-jurisdicciones
+  group: colonial
+  title: HGIS jurisdictions, 7 snapshots
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/HZJGKA"
+  dest: hgis-indias
+  subdir: jurisdicciones
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  large: true
+  approx_bytes: 3260000000
+  notes: "6 RAR snapshots; take the newest only downstream."
+
+- id: hgis-flotas
+  group: colonial
+  title: HGIS flotas y galeones routes
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/UGLWCR"
+  dest: hgis-indias
+  subdir: flotas
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 2000000
+
+- id: hgis-consulados
+  group: colonial
+  title: HGIS consulados (merchant guilds)
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/BCMZHB"
+  dest: hgis-indias
+  subdir: consulados
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 100000
+
+- id: hgis-cajas-reales
+  group: colonial
+  title: HGIS royal treasuries (cajas reales)
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/4PDYDP"
+  dest: hgis-indias
+  subdir: cajas-reales
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 100000
+
+- id: hgis-mints
+  group: colonial
+  title: HGIS mints (casas de moneda)
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/RNRKXI"
+  dest: hgis-indias
+  subdir: mints
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 100000
+
+- id: hgis-shipyards
+  group: colonial
+  title: HGIS shipyards (astilleros)
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/UYWTDD"
+  dest: hgis-indias
+  subdir: shipyards
+  licence: Custom non-commercial
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 200000
+
+- id: coldat
+  group: colonial
+  title: COLDAT colonial dates
+  resolver: dataverse
+  url: "https://dataverse.harvard.edu/api/datasets/:persistentId?persistentId=doi:10.7910/DVN/T9SDEW"
+  licence: CC0-1.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 1000000
+
+- id: owid-coldat
+  group: colonial
+  title: OWID COLDAT republication
+  resolver: direct
+  url: https://ourworldindata.org/grapher/european-overseas-colonies-by-colonizer.csv
+  dest: coldat
+  subdir: owid
+  licence: CC-BY
+  tier: T2
+  status: verified
+  redistribute: true
+  approx_bytes: 102000
+
+- id: newberry-ahcb
+  group: colonial
+  title: Newberry AHCB national county boundaries
+  resolver: direct
+  url: https://publications.newberry.org/ahcb/downloads/gis/US_AtlasHCB_Counties.zip
+  licence: Conflicting (CC-BY-NC-SA vs any lawful purpose)
+  tier: T1
+  status: verified
+  redistribute: false
+  large: true
+  approx_bytes: 515000000
+  notes: "National zip is big; state-territory zip is a smaller optional alternative."
+
+- id: newberry-ahcb-state
+  group: colonial
+  title: Newberry AHCB state and territory boundaries
+  resolver: direct
+  url: https://publications.newberry.org/ahcb/downloads/gis/US_AtlasHCB_StateTerr.zip
+  dest: newberry-ahcb
+  subdir: state-territory
+  licence: Conflicting (CC-BY-NC-SA vs any lawful purpose)
+  tier: T1
+  status: verified
+  redistribute: false
+  large: true
+  approx_bytes: 113000000
+
+- id: cshapes
+  group: colonial
+  title: CShapes 2.0
+  resolver: direct
+  url: https://icr.ethz.ch/data/cshapes/
+  licence: CC-BY-NC-SA-4.0
+  tier: T1
+  status: skip
+  redistribute: false
+  notes: "Optional; starts 1816/1886, outside the period."
+
+- id: icow-col
+  group: colonial
+  title: ICOW Colonial History
+  resolver: direct
+  url: https://www.paulhensel.org/icowcol.html
+  licence: Do not redistribute
+  tier: T1
+  status: skip
+  redistribute: false
+  notes: "Optional; starts 1816 and must never be redistributed."
+
+# -------------------------------------------------------------------- routes
+- id: cliwoc-gpkg
+  group: routes
+  title: CLIWOC 2.1 GeoPackage (Ottens)
+  resolver: direct
+  url: https://github.com/stvno/stvno.github.io/raw/master/page/cliwoc/CLIWOC21.gpkg
+  dest: cliwoc
+  subdir: gpkg
+  licence: None stated
+  tier: T3
+  status: verified
+  redistribute: false
+  approx_bytes: 190000000
+  notes: "Served through GitHub LFS; redirects to media.githubusercontent.com."
+
+- id: cliwoc-pangaea
+  group: routes
+  title: CLIWOC 2.1 (PANGAEA, T1)
+  resolver: direct
+  url: https://doi.pangaea.de/10.1594/PANGAEA.611088
+  dest: cliwoc
+  subdir: pangaea
+  licence: CC-BY-3.0
+  tier: T1
+  status: skip
+  redistribute: true
+  large: true
+  notes: "Optional T1 harvest of 5,468 children; parent ?format=zip times out. Use the GPKG."
+
+- id: cliwoc-kaggle
+  group: routes
+  title: CLIWOC15 (Kaggle)
+  resolver: direct
+  url: https://www.kaggle.com/datasets/cwiloc/climate-data-from-ocean-ships
+  dest: cliwoc
+  subdir: kaggle
+  licence: CC0 as labelled
+  tier: T3
+  status: manual
+  redistribute: true
+  notes: "Optional; needs KAGGLE_USERNAME/KAGGLE_KEY."
+
+- id: reshare-ew-ports-routes
+  group: routes
+  title: England and Wales ports and routes (ReShare 853711)
+  resolver: direct
+  urls:
+    - https://reshare.ukdataservice.ac.uk/853711/1/Data_HistoricPorts.zip
+    - https://reshare.ukdataservice.ac.uk/853711/2/Data_ShippingRoutes.zip
+    - https://reshare.ukdataservice.ac.uk/853711/3/DataGuide.docx
+  licence: Conflicting (CC-BY-SA-4.0 vs CC-BY-4.0)
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 1200000
+
+- id: dutch-asiatic-shipping
+  group: routes
+  title: Dutch-Asiatic Shipping
+  resolver: direct
+  urls:
+    - https://resources.huygens.knaw.nl/das/voyages_with_details.csv
+    - https://resources.huygens.knaw.nl/das/voyages_with_opvarenden.csv
+  licence: None stated
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 2200
+
+- id: stro-sound-toll
+  group: routes
+  title: STRO 2.0 Sound Toll Registers
+  resolver: figshare
+  url: https://api.figshare.com/v2/articles/27176202
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  large: true
+  approx_bytes: 1600000000
+  notes: "18 CSVs; ~1.6 GB."
+
+- id: manila-galleon
+  group: routes
+  title: Manila galleon tables (NOAA)
+  resolver: direct
+  url: https://www.ncei.noaa.gov/pub/data/paleo/historical/pacific/acapulco-manila.pdf
+  licence: Cite DOI
+  tier: T1
+  status: verified
+  redistribute: false
+  approx_bytes: 1040000
+
+- id: noaa-eic-logbooks
+  group: routes
+  title: NOAA English East India Company logbooks (C00785)
+  resolver: direct
+  url: https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00785
+  licence: NOAA disclaimer
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "Landing page and ISO XML list no data URL; find or request the NCEI access."
+
+- id: portic
+  group: routes
+  title: PORTIC API
+  resolver: direct
+  url: https://anr.portic.fr/en/news-of-developments/
+  licence: Code AGPL-3.0; data not stated
+  tier: T1
+  status: skip
+  redistribute: false
+  notes: "Optional; no public API endpoint located."
+
+- id: historical-sea-routing
+  group: routes
+  title: Historical_Sea_Routing
+  resolver: github
+  url: https://github.com/docuracy/Historical_Sea_Routing
+  licence: CC-BY-NC-4.0
+  tier: T3
+  status: verified
+  redistribute: false
+  approx_bytes: 5000000
+
+- id: ibm-maritime-archives
+  group: routes
+  title: IBM chuk-mcp-maritime-archives
+  resolver: github
+  url: https://github.com/IBM/chuk-mcp-maritime-archives
+  licence: Apache-2.0 (underlying sources mostly unspecified)
+  tier: T3
+  status: verified
+  redistribute: true
+  approx_bytes: 20000000
+
+- id: shipping-lanes
+  group: routes
+  title: Shipping-Lanes (modern)
+  resolver: github
+  url: https://github.com/newzealandpaul/Shipping-Lanes
+  licence: CC-BY-SA-4.0
+  tier: T3
+  status: skip
+  redistribute: true
+  notes: "Modern (2012); not historical."
+
+- id: icoads
+  group: routes
+  title: ICOADS R3
+  resolver: direct
+  url: https://gdex.ucar.edu/datasets/d548000/
+  licence: CC-BY-4.0
+  tier: T1
+  status: manual
+  redistribute: true
+  notes: "Free registration at GDEX; download the IMMA subset for 1662-1860."
+
+- id: navigocorpus
+  group: routes
+  title: Navigocorpus
+  resolver: direct
+  url: https://navigocorpus.huma-num.fr/
+  licence: Not stated
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "Guest login; no bulk download."
+
+# --------------------------------------------------------------------- trade
+- id: toflit18
+  group: trade
+  title: TOFLIT18
+  resolver: zenodo
+  url: https://zenodo.org/api/records/13749501
+  licence: ODbL-1.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 266000000
+
+- id: ricardo
+  group: trade
+  title: RICardo
+  resolver: github
+  url: https://github.com/medialab/ricardo_data
+  licence: ODbL-1.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 20000000
+
+- id: federico-tena
+  group: trade
+  title: Federico-Tena World Trade Historical Database
+  resolver: direct
+  url: https://www.uc3m.es/ss/Satellite/UC3MInstitucional/es/TextoMixta/1371246237481/Federico-Tena_World_Trade_Historical_Database
+  licence: None stated
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "UC3M pages carry no direct file link; download through the site."
+
+- id: globalise-voc-places
+  group: trade
+  title: GLOBALISE VOC places
+  resolver: zenodo
+  url: https://zenodo.org/api/records/13341556
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 9000000
+
+- id: whg
+  group: trade
+  title: World Historical Gazetteer datasets 12, 1245, 819, 657, 15
+  resolver: direct
+  url: https://whgazetteer.org/
+  licence: Mostly unrecorded; WHG additions CC-BY-4.0
+  tier: T1
+  status: manual
+  redistribute: false
+  notes: "The /entity/dataset:N/api?filetype=tsv export returns 401 without auth; download via the web."
+
+- id: sv-ports
+  group: trade
+  title: SlaveVoyages common-ports CSV with lat/long
+  resolver: direct
+  url: https://guides.library.ucsc.edu/DS/Resources/Class-Specific/LALS194E/MappingData
+  dest: slavevoyages
+  subdir: ports
+  licence: Not stated
+  tier: T2
+  status: manual
+  redistribute: false
+  notes: "Only a Google Drive link in a UCSC guide; download manually."
