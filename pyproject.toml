@@ -1,0 +1,56 @@
+[project]
+name = "dead-reckoning-fetch"
+version = "0.1.0"
+description = "Download the Age of Sail GIS datasets, and scrape the Three Decks ship catalogue."
+readme = "data/README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "pandas>=2.0",
+    "lxml>=5.0",
+    "scrapy>=2.13",
+    "parsel>=1.9",
+    "pyarrow>=17.0",
+]
+
+[project.optional-dependencies]
+validate = [
+    "pyogrio>=0.7",
+    "pyreadstat>=1.2",
+]
+rar = [
+    "rarfile>=4.1",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+fetch = "fetch.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fetch", "scrapers/threedecks/threedecks"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "scrapers/threedecks"]
+addopts = "-ra -m 'not network'"
+markers = [
+    "network: tests that make live network requests (deselect with '-m \"not network\"')",
+    "real_pages: golden tests that need tests/fixtures/real/ (gitignored; skipped when absent)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]

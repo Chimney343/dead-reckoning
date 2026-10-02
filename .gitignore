@@ -224,3 +224,12 @@ data/derived/*/*
 !data/derived/*/.gitkeep
 !data/raw/*/README.md
 !data/derived/*/README.md
+
+# Fetcher working state (generated, never committed)
+data/interim/
+data/raw/_inventory.csv
+
+# Three Decks scrape: raw pages, HTTP cache, state and exports stay out of git.
+# The GitHub remote is public, so no scraped content is ever committed (rule 8).
+data/threedecks/
+tests/fixtures/real/
