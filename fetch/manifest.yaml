@@ -847,3 +847,43 @@
   status: manual
   redistribute: false
   notes: "Only a Google Drive link in a UCSC guide; download manually."
+
+# ---------------------------------------------------------------- gazetteer
+- id: geonames
+  group: gazetteer
+  title: GeoNames country dumps and cities1000
+  resolver: direct
+  dest: geonames
+  urls:
+    - https://download.geonames.org/export/dump/IE.zip
+    - https://download.geonames.org/export/dump/GB.zip
+    - https://download.geonames.org/export/dump/CA.zip
+    - https://download.geonames.org/export/dump/AU.zip
+    - https://download.geonames.org/export/dump/US.zip
+    - https://download.geonames.org/export/dump/ZA.zip
+    - https://download.geonames.org/export/dump/ES.zip
+    - https://download.geonames.org/export/dump/FR.zip
+    - https://download.geonames.org/export/dump/NL.zip
+    - https://download.geonames.org/export/dump/PT.zip
+    - https://download.geonames.org/export/dump/cities1000.zip
+  licence: CC-BY-4.0
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 12000000
+  notes: "Coastal features and ports for offline geocoding."
+
+- id: naturalearth
+  group: gazetteer
+  title: Natural Earth marine areas and 50m land
+  resolver: direct
+  dest: naturalearth
+  urls:
+    - https://naciscdn.org/naturalearth/10m/physical/ne_10m_geography_marine_polys.zip
+    - https://naciscdn.org/naturalearth/50m/physical/ne_50m_land.zip
+  licence: Public domain
+  tier: T1
+  status: verified
+  redistribute: true
+  approx_bytes: 20000000
+  notes: "Sea-area names for region points; land for the static map."

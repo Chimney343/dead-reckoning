@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [114.0, -28.8]},
+      "properties": {
+        "unique_num": 1,
+        "name": "Batavia",
+        "type_of_si": "Ship",
+        "when_lost": "1629/06/04",
+        "lat": -28.8,
+        "long": 114.0,
+        "position_i": "GPS",
+        "country_bu": "Netherlands",
+        "port_built": "Amsterdam",
+        "port_regis": "",
+        "owner": "VOC",
+        "sunk_code": "Wrecked and sunk",
+        "sinking": "Struck reef",
+        "port_from": "Texel",
+        "port_to": "Batavia",
+        "region": "Mid West",
+        "where_lost": "Houtman Abrolhos"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [118.0, -20.0]},
+      "properties": {
+        "unique_num": 2,
+        "name": "Zeewijk",
+        "type_of_si": "Ship",
+        "when_lost": "1727/06/09",
+        "lat": -20.0,
+        "long": 118.0,
+        "position_i": "Chart",
+        "country_bu": "Netherlands",
+        "port_built": "",
+        "port_regis": "Amsterdam",
+        "owner": "",
+        "sunk_code": "Wrecked and sunk",
+        "sinking": "Struck reef",
+        "port_from": "",
+        "port_to": "",
+        "region": "Mid West",
+        "where_lost": "Houtman Abrolhos"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [116.0, -32.0]},
+      "properties": {
+        "unique_num": 3,
+        "name": "Refloat Me",
+        "type_of_si": "Barge",
+        "when_lost": "1901/01/01",
+        "lat": -32.0,
+        "long": 116.0,
+        "position_i": "",
+        "country_bu": "",
+        "port_built": "",
+        "port_regis": "",
+        "owner": "",
+        "sunk_code": "Refloated",
+        "sinking": "",
+        "port_from": "",
+        "port_to": "",
+        "region": "",
+        "where_lost": ""
+      }
+    }
+  ]
+}

@@ -46,8 +46,7 @@ class ShipsByNationSpider(TDSpider):
     def parse_search(self, response):
         result = parse_search(Selector(text=response.text))
         self.store.seed(result.ship_ids, discovered_by=self.name, depth=1)
-        for td_id in result.ship_ids:
-            yield self.ship_request(td_id, depth=1, discovered_by=self.name)
+        yield from self.ship_requests(result.ship_ids, depth=1, discovered_by=self.name)
         if result.has_next:
             next_page = (result.page or response.meta.get("page", 1)) + 1
             yield self.search_request(next_page)

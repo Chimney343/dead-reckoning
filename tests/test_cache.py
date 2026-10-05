@@ -118,3 +118,51 @@ def test_reopening_keeps_entries(tmp_path):
     second.open_spider(spider)
     assert second.retrieve_response(spider, request) is not None
     second.close_spider(spider)
+
+
+def test_robots_txt_is_never_cached():
+    # Rule 1: a cached robots.txt would be obeyed forever, even after it changed.
+    from threedecks.cache import ThreeDecksCachePolicy
+
+    policy = ThreeDecksCachePolicy(Settings())
+    assert not policy.should_cache_request(Request("https://threedecks.org/robots.txt"))
+    assert policy.should_cache_request(
+        Request("https://threedecks.org/index.php?display_type=show_ship&id=1")
+    )
+
+
+def test_challenge_pages_are_never_cached():
+    # A cached challenge would be replayed to the retry after a cool-off.
+    from threedecks.cache import ThreeDecksCachePolicy
+
+    policy = ThreeDecksCachePolicy(Settings())
+    request = Request("https://threedecks.org/index.php?display_type=show_ship&id=1")
+    challenge = HtmlResponse(
+        url=request.url, body=b"<title>Just a moment...</title>", encoding="utf-8"
+    )
+    assert not policy.should_cache_response(challenge, request)
+    assert policy.should_cache_response(make_response(), request)
+
+
+def test_block_pages_are_never_cached():
+    # A cached WAF block page (any status, 200 included) would be replayed later.
+    from threedecks.cache import ThreeDecksCachePolicy
+
+    policy = ThreeDecksCachePolicy(Settings())
+    request = Request("https://threedecks.org/index.php?display_type=show_ship&id=1")
+    by_body = HtmlResponse(
+        url=request.url, body=b"<title>Sorry, you have been blocked</title>", encoding="utf-8"
+    )
+    by_header = HtmlResponse(
+        url=request.url,
+        body=b"<html>ok</html>",
+        headers={"cf-mitigated": "blocked"},
+        encoding="utf-8",
+    )
+    assert not policy.should_cache_response(by_body, request)
+    assert not policy.should_cache_response(by_header, request)
+
+
+def test_every_cache_commit_is_flushed_to_disk(storage):
+    # A power cut must not drop a page whose record is already marked done.
+    assert storage._conn.execute("PRAGMA synchronous").fetchone()[0] == 2  # FULL

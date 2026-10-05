@@ -1,0 +1,11 @@
+priority,regex,lang,cause_class,weather_related,is_total_loss,sources
+5,"\b(?:refloat\w*|salvag\w*|damaged|dismast\w*|condemn\w*|sold|broken up|broke up|brought on dry land|for display|hulk\w*)",en,unknown,false,false,*
+10,"in action|sunk by|sunk in (?:the )?(?:battle|action)|destroyed by|blown up by|torpedoed|bombed|\bmined\b|fuego enemigo|hundido por|captured[\s\S]*?(?:sunk|burnt|burned|destroyed)",en,enemy_action,false,true,*
+20,"\bscuttl|\bset (?:on )?fire to avoid|burnt[^.;]*avoid|burned[^.;]*avoid|incendiado[^.;]*apresamiento|sunk as a (?:blockship|breakwater)|to avoid (?:her )?capture",en,scuttled,false,true,*
+30,"\b(?:burnt|burned)\b|caught fire|on fire|exploded|blew up|\bvolado\b|\bincendiado\b|\bquemado\b|\bfire\b",en,fire_explosion,false,true,*
+40,"collision|collided|run down by|ran foul|struck[^.;]*by another",en,collision,false,true,*
+50,"wrecked|stranded|ran aground|\baground\b|driven ashore|struck (?:a )?(?:reef|rock|sandbank|shoal)|\bashore\b|naufrag|beached|cast away",en,stranded,false,true,*
+60,"foundered|founder|\bsank\b|\bsunk\b|capsiz|sprang a leak|swamped|went down|overwhelmed",en,foundered,false,true,*
+70,"lost in (?:a )?(?:storm|hurricane|typhoon|gale|tempest|cyclone)|\bstorm\b|hurricane|typhoon|cyclone|\bgale\b|tempest|heavy weather|bad weather|crushed by ice",en,weather,true,true,*
+90,"\bcaptured\b|\btaken\b|\bseized\b|\bprize\b|apresado|apresamiento",en,unknown,false,false,*
+95,"missing|abandoned|cause not reported|not reported|unknown|no cause",en,unknown,false,true,*

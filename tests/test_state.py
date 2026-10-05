@@ -112,3 +112,50 @@ def test_get_ship_returns_parsed_json(tmp_path):
     raw = store.get_ship(9)
     assert json.loads(json.dumps(raw))["td_id"] == 9
     store.close()
+
+
+def capture(captured, captors, war=None, text=""):
+    return CaptureRow(
+        captured_td_id=captured, captured_label="x", date=parse_td_date("1804/12/07"),
+        captor_td_ids=captors, captor_text=text, from_nation_id=7, by_nation_id=1, war_id=war,
+    )
+
+
+def test_same_ship_and_date_with_different_captors_are_both_kept(tmp_path):
+    # Diligencia (13269), 1804/12/07: listed once for Pique and once for Diana.
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_capture(capture(13269, [5823]))
+    store.save_capture(capture(13269, [2812]))
+    store.save_capture(capture(13269, [], text="Taken by the British"))
+    assert store.capture_count() == 3
+    store.close()
+
+
+def test_clear_captures_drops_only_that_query(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_capture(capture(1, [2]))
+    store.save_capture(capture(1, [2], war=5))
+    assert store.clear_captures(7, 1, None) == 1
+    assert [row["war_id"] for row in store.iter_captures()] == [5]
+    store.close()
+
+
+def test_a_run_that_never_finished_is_marked_interrupted(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    killed = store.start_run("ships_by_nation")
+    store.seed([1], discovered_by="x")
+    store.mark_status(1, "done")  # its last sign of life
+    store.start_run("captures")  # the next session
+    run = store.get_run(killed)
+    assert run["close_reason"] == "interrupted"
+    assert run["finished_at"] is not None
+    store.close()
+
+
+def test_release_attempts_gives_one_back(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.mark_status(1, "error", increment_attempts=True)
+    store.mark_status(1, "error", increment_attempts=True)
+    store.release_attempts([1])
+    assert (store.status(1), store.attempts(1)) == ("pending", 1)
+    store.close()

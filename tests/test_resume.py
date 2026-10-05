@@ -161,3 +161,29 @@ def test_blocked_close_then_recover(tmp_path):
             store.close()
     finally:
         site.stop()
+
+
+def test_rate_limit_is_waited_out_then_the_crawl_completes(tmp_path):
+    ids = list(range(1, 21))
+    site = FakeSite(ids)
+    site.block_id, site.block_active, site.block_limit = 10, True, 1  # one 429, then fine
+    site.start()
+    data = tmp_path / "data"
+    data.mkdir()
+    try:
+        cooloff = ["-s", "THREEDECKS_MAX_COOLOFFS=2", "-s", "THREEDECKS_COOLOFF_SECS=1"]
+        rc, out = run_crawl(data, site.base_url, cooloff)
+        assert rc == 0, out[-3000:]
+
+        store = StateStore(data / "state.sqlite")
+        try:
+            reason = store._conn.execute(  # noqa: SLF001
+                "SELECT close_reason FROM runs ORDER BY run_id DESC LIMIT 1"
+            ).fetchone()["close_reason"]
+            assert reason == "finished"
+            assert all(store.status(i) == "done" for i in ids)
+        finally:
+            store.close()
+        assert site.count(10) == 2  # the blocked request was retried once, unchanged
+    finally:
+        site.stop()

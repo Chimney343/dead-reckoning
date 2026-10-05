@@ -2,8 +2,8 @@
 
     uv run python scripts/qa_report.py [--data-dir data/threedecks] [--out report.md]
 
-Reports counts per nation, the share with a Launched date, unknown labels by
-frequency, incarnation symmetry, capture/incarnation date mismatches and
+Reports counts per nation, the share with a Launched date, unknown labels and
+unknown sections by frequency, incarnation symmetry, capture/incarnation date mismatches and
 frontier rows stuck in error states. Source disagreements are reported, never
 reconciled here (Plan 3.4).
 """
@@ -12,10 +12,14 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import Counter, defaultdict
+import re
+from collections import Counter
 from pathlib import Path
 
 from threedecks.state import StateStore
+
+# A value shaped like a date (optional qualifier, digits, dots and slashes).
+DATE_SHAPED = re.compile(r"^(?:bef\.?|aft\.?|c\.)?\s*\d[\d./]*$", re.IGNORECASE)
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "threedecks"
 
@@ -38,19 +42,25 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
     unknown_labels = Counter(
         label for s in ships for label in s.get("unknown_labels", [])
     )
+    unknown_sections = Counter(
+        section for s in ships for section in s.get("unknown_sections", [])
+    )
 
-    # Incarnation symmetry: A -> B implies B -> A.
-    edges: dict[int, set[int]] = defaultdict(set)
+    # Incarnation symmetry: "A Becomes B" implies "B Previously A", and the reverse.
+    # A link to a ship not fetched yet is unchecked, not broken.
+    by_id = {ship.get("td_id"): ship for ship in ships}
+    broken: list[dict] = []
+    unchecked = 0
+    pairs = (("next_td_ids", "previous_td_ids"), ("previous_td_ids", "next_td_ids"))
     for ship in ships:
         td_id = ship.get("td_id")
-        for nxt in ship.get("next_td_ids", []):
-            edges[td_id].add(nxt)
-    broken = [
-        {"from": a, "to": b}
-        for a, targets in edges.items()
-        for b in targets
-        if a not in edges.get(b, set())
-    ]
+        for field, mirror in pairs:
+            for other_id in ship.get(field, []):
+                other = by_id.get(other_id)
+                if other is None:
+                    unchecked += 1
+                elif td_id not in other.get(mirror, []):
+                    broken.append({"from": td_id, "to": other_id, "field": field})
 
     # Capture rows whose captured ship has no Captured-type lifecycle row.
     captured_ids = {c.get("captured_td_id") for c in captures if c.get("captured_td_id")}
@@ -71,16 +81,36 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
     }
 
     report = {
+        "unparseable_dates": unparseable_dates(ships),
         "ships": len(ships),
         "captures": len(captures),
         "by_nation": dict(by_nation.most_common()),
         "with_launched_date": with_launch,
         "unknown_labels": dict(unknown_labels.most_common(50)),
+        "unknown_sections": dict(unknown_sections.most_common()),
         "broken_incarnation_links": broken,
+        "unchecked_incarnation_links": unchecked,
         "captures_missing_lifecycle": missing_capture_lifecycle,
         "frontier_errors": stuck,
     }
     return report, render_markdown(report)
+
+
+def unparseable_dates(ships: list[dict]) -> list[dict]:
+    """Date-shaped values the parser could not read, e.g. ``60.1739`` or
+    ``36.5.1801``: errors in the source, kept raw and listed for the owner."""
+    found = []
+    for ship in ships:
+        for row in ship.get("base_rows", []):
+            text = (row.get("text") or "").strip()
+            if row.get("date") is None and DATE_SHAPED.match(text):
+                found.append({"td_id": ship["td_id"], "where": row["label"], "raw": text})
+        for event in ship.get("history", []):
+            date = event.get("date") or {}
+            raw = (date.get("raw") or "").strip()
+            if raw and not date.get("precision"):
+                found.append({"td_id": ship["td_id"], "where": "Service History", "raw": raw})
+    return found
 
 
 def render_markdown(report: dict) -> str:
@@ -100,11 +130,17 @@ def render_markdown(report: dict) -> str:
         lines += [f"- {label}: {n}" for label, n in report["unknown_labels"].items()]
     else:
         lines.append("- none")
+    lines += ["", "## Unknown sections", ""]
+    if report["unknown_sections"]:
+        lines += [f"- {section}: {n}" for section, n in report["unknown_sections"].items()]
+    else:
+        lines.append("- none")
     lines += [
         "",
         "## Broken incarnation links",
         "",
         f"- {len(report['broken_incarnation_links'])} not mirrored",
+        f"- {report['unchecked_incarnation_links']} to ships not fetched yet",
         "",
         "## Captures with no Captured lifecycle row",
         "",
@@ -114,6 +150,11 @@ def render_markdown(report: dict) -> str:
         "",
     ]
     lines += [f"- {status}: {n}" for status, n in report["frontier_errors"].items()] or ["- none"]
+    bad = report["unparseable_dates"]
+    lines += ["", "## Unparseable dates (errors in the source; worth sending to the owner)", ""]
+    lines += [f"- ship {d['td_id']}, {d['where']}: {d['raw']}" for d in bad[:100]] or ["- none"]
+    if len(bad) > 100:
+        lines.append(f"- ... and {len(bad) - 100} more")
     lines.append("")
     return "\n".join(lines)
 

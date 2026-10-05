@@ -1,7 +1,8 @@
 """Tier C: every ship id (Plan 5).
 
-Seeds the 25,300 ids in ``ships.xml``, the gaps below its maximum, then scans
-upward from the maximum until 200 consecutive not-found responses. The upward
+Seeds the 25,300 ids in ``ships.xml`` and every other id up to the highest id
+known (the sitemap's or the frontier's, whichever is higher), then scans upward
+from there until 200 consecutive not-found responses. The upward
 stop position lives in the frontier (the trailing ``not_found`` rows), so a
 resumed run continues the scan rather than restarting it.
 """
@@ -48,9 +49,13 @@ class ShipsAllSpider(TDSpider):
         )
         if ids:
             self.store.seed(ids, discovered_by="sitemap")
-            known = set(ids)
-            gaps = [i for i in range(1, max(ids) + 1) if i not in known]
-            self.store.seed(gaps, discovered_by="gap")
+        # Fill every id up to the highest one known, not just the sitemap's: the
+        # sitemap is stale (max 28,756) while Tier A finds ids above 34,000, and
+        # the upward scan starts above the frontier's maximum.
+        top = max(max(ids, default=0), self.store.max_td_id() or 0)
+        known = set(ids)
+        gaps = [i for i in range(1, top + 1) if i not in known]
+        self.store.seed(gaps, discovered_by="gap")  # INSERT OR IGNORE: known rows stay
         yield from self.stream_pending()
         yield self.upward_request()
 

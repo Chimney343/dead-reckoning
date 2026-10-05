@@ -4,8 +4,10 @@ Two date formats are in use:
 
 * ship pages: ``D.M.YYYY`` with partial forms (``4.1788``, ``1790``) and a
   Julian alternate year (``1.2.1702/03``, meaning 1 Feb 1702 OS = 12 Feb 1703 NS);
-* the captures list: ``YYYY/MM/DD``, ``YYYY/MM`` and ``YYYY``, with an
-  optional ``bef.`` qualifier.
+* the captures list: ``YYYY/MM/DD``, ``YYYY/MM`` and ``YYYY``.
+
+Either may carry a qualifier: ``bef.`` (before), ``aft.`` (after) or ``c.``
+(circa), as in ``c.18.6.1744`` or ``aft.15.2.1745/46``.
 
 A date is never reconciled: the raw string is always kept, and any field that
 cannot be derived stays ``None``.
@@ -31,12 +33,13 @@ _MONTHS = {
     "december": 12,
 }
 
-_DAY_DOT = re.compile(r"^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:/(\d{2}|\d{4}))?$")
-_MONTH_DOT = re.compile(r"^(\d{1,2})\.(\d{4})(?:/(\d{2}|\d{4}))?$")
+# The Julian alternate year can be 1 to 4 digits: 1702/03, 1708/9, 1799/1800.
+_DAY_DOT = re.compile(r"^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:/(\d{1,4}))?$")
+_MONTH_DOT = re.compile(r"^(\d{1,2})\.(\d{4})(?:/(\d{1,4}))?$")
 _YEAR = re.compile(r"^(\d{4})$")
 _SLASH_DMY = re.compile(r"^(\d{4})/(\d{1,2})/(\d{1,2})$")
 _SLASH_MY = re.compile(r"^(\d{4})/(\d{1,2})$")
-_BEF = re.compile(r"^bef\.?\s*", re.IGNORECASE)
+_QUALIFIER = re.compile(r"^(bef\.?|aft\.?|c\.)\s*", re.IGNORECASE)
 _NS = re.compile(r"NS\s+(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})")
 
 
@@ -54,12 +57,14 @@ class TDDate:
 
 
 def _alt_year(year: int, alt: str | None) -> int | None:
+    """``1708`` + ``"9"`` -> 1709; the digits replace the year's last ones,
+    rolling over when the result is not later (``1799`` + ``"0"`` -> 1800)."""
     if alt is None:
         return None
-    value = int(alt)
-    if value < 100:
-        value += (year // 100) * 100
-    return value
+    if len(alt) >= 4:
+        return int(alt)
+    value = int(str(year)[: -len(alt)] + alt)
+    return value if value > year else value + 10 ** len(alt)
 
 
 def _gregorian_from_tooltip(tooltip: str | None) -> str | None:
@@ -82,9 +87,9 @@ def parse_td_date(raw: str, tooltip: str | None = None) -> TDDate:
     if work in ("", "?"):
         return result
 
-    match = _BEF.match(work)
+    match = _QUALIFIER.match(work)
     if match:
-        result.qualifier = "bef."
+        result.qualifier = match.group(1).lower().rstrip(".") + "."
         work = work[match.end() :].strip()
 
     if (m := _DAY_DOT.match(work)) is not None:

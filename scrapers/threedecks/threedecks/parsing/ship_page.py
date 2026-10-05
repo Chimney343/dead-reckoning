@@ -19,6 +19,7 @@ from threedecks.items import (
     BaseRow,
     ComplementRow,
     DimensionSet,
+    FleetRow,
     HistoryEvent,
     LabeledDate,
     LinkRef,
@@ -31,54 +32,99 @@ from threedecks.parsing.dates import parse_td_date
 from threedecks.parsing.grid import heading_text, section_by_heading, span_rows, strip_count
 
 _URL_KIND = re.compile(r"display_type=([a-z_]+)")
+
+# Linked ships and crewmen carry a hover card (span.tooltiptext) inside the
+# cell; its text and links are not part of the cell's own content.
+_NOT_TOOLTIP = "not(ancestor::span[contains(@class,'tooltiptext')])"
+_VISIBLE_TEXT = f".//text()[{_NOT_TOOLTIP}]"
+_VISIBLE_LINKS = f".//a[@href][{_NOT_TOOLTIP}]"
 _LEADING_DATE = re.compile(r"^(\d{1,2}\.\d{1,2}\.\d{4}|\d{4})")
 
-# Base-row labels the parser knows. Anything else is surfaced in unknown_labels
-# so a new fate label (Wrecked, Foundered, ...) is noticed rather than dropped.
-KNOWN_LABELS = {
-    "Nominal Guns",
-    "Nationality",
-    "Operator",
-    "Ordered",
-    "Keel Laid Down",
-    "Laid down",
-    "Named",
-    "Launched",
-    "How acquired",
-    "Acquired",
-    "Shipyard",
-    "Builder",
-    "Built by",
-    "Ship Class",
-    "Designed by",
-    "Constructor",
-    "Category",
-    "Ship Type",
-    "Sailing Rig",
-    "Commissioned",
-    "Captured",
-    "Sold",
-    "Transferred",
-    "Returned",
-    "Wrecked",
-    "Burnt",
-    "Foundered",
-    "Broken Up",
-    "Destroyed",
-    "Scuttled",
-    "Hulk",
-    "Renamed",
-    "Previously",
-    "Becomes",
-    "Fate",
-    "Fate Notes",
-    "In Service",
-    "Out of Service",
-    "Displacement",
-    "Tons Burthen",
-    "Crew",
-    "Notes",
+# What each base-row label says about the ship. The loss-event build keys on
+# these: "captured" and "lost" end a Spanish service record; "disposed" and
+# "transferred" end it without a loss. A label missing here is reported in
+# unknown_labels (the row itself is always kept) so it can be added.
+LABEL_CATEGORIES = {
+    "Nominal Guns": "attribute",
+    "Nationality": "attribute",
+    "Operator": "attribute",
+    "Category": "attribute",
+    "Ship Type": "attribute",
+    "Sailing Rig": "attribute",
+    "Ship Class": "attribute",
+    "National Rate": "attribute",
+    "Home Port": "attribute",
+    "Displacement": "attribute",
+    "Tons Burthen": "attribute",
+    "Crew": "attribute",
+    "Notes": "attribute",
+    "Fate": "attribute",
+    "Fate Notes": "attribute",
+    "Ordered": "built",
+    "Keel Laid Down": "built",
+    "Laid down": "built",
+    "Named": "built",
+    "Launched": "built",
+    "Shipyard": "built",
+    "Builder": "built",
+    "Built by": "built",
+    "Designed by": "built",
+    "Constructor": "built",
+    "Commissioned": "built",
+    "First Commissioned": "built",
+    "How acquired": "acquired",
+    "Acquired": "acquired",
+    "Purchased": "acquired",
+    "Hired": "acquired",
+    "Bought by the Navy": "acquired",
+    "Requisitioned": "acquired",
+    "Captured": "captured",
+    "Captured and burnt": "captured",
+    "Transferred": "transferred",
+    "Transfered": "transferred",
+    "Presented": "transferred",
+    "Given Away": "transferred",
+    "Returned": "transferred",
+    "Returned to Owners": "transferred",
+    "In Service": "service",
+    "Out of Service": "service",
+    "Renamed": "service",
+    "Razeed": "service",
+    "Hulk": "service",
+    "Hulked": "service",
+    "Disarmed": "service",
+    "Mutinied": "service",
+    "Rerated": "service",
+    "First Mentioned": "attested",
+    "Last Mentioned": "attested",
+    "Last known": "attested",
+    "Extant": "attested",
+    "Wrecked": "lost",
+    "Burnt": "lost",
+    "Burnt to avoid capture": "lost",
+    "Foundered": "lost",
+    "Destroyed": "lost",
+    "Scuttled": "lost",
+    "Blown Up": "lost",
+    "Sunk in Action": "lost",
+    "Expended as Fireship": "lost",
+    "Beached": "lost",
+    "Abandoned": "lost",
+    "Burnt in Action": "lost",
+    "Sunk to avoid capture": "lost",
+    "Sold": "disposed",
+    "Sold for Break Up": "disposed",
+    "Broken Up": "disposed",
+    "Broken Up to Rebuild": "disposed",
+    "Sunk as Foundation": "disposed",
+    "Sunk as Breakwater": "disposed",
+    "Sunk as Blockship": "disposed",
+    "Condemned": "disposed",
+    "Deleted from list": "disposed",
+    "Previously": "link",
+    "Becomes": "link",
 }
+KNOWN_LABELS = frozenset(LABEL_CATEGORIES)
 
 # Headings that are ship sections or deliberately ignored (comments).
 KNOWN_SECTIONS = {
@@ -86,6 +132,7 @@ KNOWN_SECTIONS = {
     "Armament",
     "Crew Complement",
     "Service History",
+    "Fleets",
     "Notes on Ship",
     "Sources",
     "Recent comments to other pages",
@@ -111,9 +158,30 @@ def _kind(href: str | None) -> str | None:
     return match.group(1) if match else None
 
 
+def _tooltip_lines(anchor) -> list[str]:
+    """The ``<br>``-separated lines of the hover card wrapping ``anchor``."""
+    cards = anchor.xpath(
+        "./ancestor::div[contains(@class,'tooltip')][1]/span[contains(@class,'tooltiptext')]"
+    )
+    if not cards:
+        return []
+    card = cards[0].root
+    lines: list[str] = []
+    current = [card.text or ""]
+    for child in card:
+        if child.tag == "br":
+            lines.append(_norm(current))
+            current = []
+        else:
+            current.append(child.text_content())
+        current.append(child.tail or "")
+    lines.append(_norm(current))
+    return [line for line in lines if line]
+
+
 def _links(cell) -> list[LinkRef]:
     out: list[LinkRef] = []
-    for anchor in cell.xpath(".//a[@href]"):
+    for anchor in cell.xpath(_VISIBLE_LINKS):
         href = anchor.xpath("./@href").get()
         out.append(
             LinkRef(
@@ -121,9 +189,20 @@ def _links(cell) -> list[LinkRef]:
                 href=href,
                 id=extract_id(href),
                 kind=_kind(href),
+                tooltip=_tooltip_lines(anchor),
             )
         )
     return out
+
+
+def _link_ids(node, kind: str) -> list[int]:
+    """Ids of the visible links of exactly ``kind`` (``show_ship`` is not ``show_shipyard``)."""
+    ids = [
+        extract_id(href)
+        for href in node.xpath(f"{_VISIBLE_LINKS}/@href").getall()
+        if _kind(href) == kind
+    ]
+    return [i for i in ids if i is not None]
 
 
 def _int_from_text(text: str) -> int | None:
@@ -132,7 +211,7 @@ def _int_from_text(text: str) -> int | None:
 
 
 def _node_text(node) -> str:
-    return _norm(node.xpath(".//text()").getall())
+    return _norm(node.xpath(_VISIBLE_TEXT).getall())
 
 
 def _row_texts(row) -> list[str]:
@@ -174,7 +253,8 @@ def _grouped_dimensions(rows) -> list[DimensionSet]:
     current: DimensionSet | None = None
     for row in rows:
         code = _header_code(row)
-        if code is not None:
+        # A header names its source when it has one; without one it is still a header.
+        if code is not None or _has_strong(row):
             current = DimensionSet(source_code=code)
             sets.append(current)
             continue
@@ -236,14 +316,6 @@ def _parse_history(root) -> list[HistoryEvent]:
         if event_node is None:
             continue
         text = _node_text(event_node)
-        battle_ids = [
-            extract_id(href)
-            for href in event_node.xpath(".//a[contains(@href,'show_battle')]/@href").getall()
-        ]
-        ship_ids = [
-            extract_id(href)
-            for href in event_node.xpath(".//a[contains(@href,'show_ship')]/@href").getall()
-        ]
         source_code = None
         for node in row:
             if node is event_node:
@@ -255,8 +327,9 @@ def _parse_history(root) -> list[HistoryEvent]:
             HistoryEvent(
                 text=text,
                 date=date,
-                battle_ids=[i for i in battle_ids if i is not None],
-                ship_ids=[i for i in ship_ids if i is not None],
+                battle_ids=_link_ids(event_node, "show_battle"),
+                ship_ids=_link_ids(event_node, "show_ship"),
+                shipyard_ids=_link_ids(event_node, "show_shipyard"),
                 source_code=source_code,
             )
         )
@@ -286,6 +359,13 @@ def _officer_rows(section_nodes) -> list[OfficerRow]:
                 _norm(named[1].xpath(".//text()").getall()),
                 named[1].xpath("./@title").get(),
             )
+        elif len(named) == 1:
+            # "1646" is a single point; "27.1.1720 -" is a range left open.
+            from_date = parse_td_date(
+                _norm(named[0].xpath(".//text()").getall()),
+                named[0].xpath("./@title").get(),
+            )
+            to_date = None if dates_text.endswith("-") else from_date
         elif " - " in dates_text:
             first, second = dates_text.split(" - ", 1)
             from_date = parse_td_date(first.strip())
@@ -306,6 +386,44 @@ def _officer_rows(section_nodes) -> list[OfficerRow]:
             )
         )
     return out
+
+
+def _span_date(spans, index: int):
+    if len(spans) <= index:
+        return None
+    return parse_td_date(_node_text(spans[index]), spans[index].attrib.get("title"))
+
+
+def _parse_fleets(root) -> list[FleetRow]:
+    """The "Fleets" table: Dates | Fleet | Fleet Commander | Source.
+
+    The site omits the ``<tr>`` around body rows, so cells are read in document
+    order and grouped by the number of column headers.
+    """
+    tables = root.xpath(".//table[.//h2[normalize-space()='Fleets']]")
+    if not tables:
+        return []
+    width = len(tables[0].xpath("./thead/tr[last()]/th")) or 4
+    cells = tables[0].xpath("./tbody//td")
+    fleets: list[FleetRow] = []
+    for start in range(0, len(cells) - width + 1, width):
+        dates, fleet, commander, source = cells[start : start + 4]
+        spans = dates.xpath(".//span[@title]")
+        fleet_link = fleet.xpath(".//a[contains(@href,'show_fleet')]")
+        crew_link = commander.xpath(".//a[contains(@href,'show_crewman')]")
+        fleets.append(
+            FleetRow(
+                dates=_node_text(dates) or None,
+                from_date=_span_date(spans, 0),
+                to_date=_span_date(spans, 1),
+                fleet_id=extract_id(fleet_link[0].attrib.get("href")) if fleet_link else None,
+                fleet_name=_node_text(fleet_link[0] if fleet_link else fleet) or None,
+                commander_id=extract_id(crew_link[0].attrib.get("href")) if crew_link else None,
+                commander_name=_node_text(crew_link[0]) if crew_link else None,
+                source_code=_node_text(source) or None,
+            )
+        )
+    return fleets
 
 
 def _parse_sources(root) -> list[SourceRef]:
@@ -369,7 +487,7 @@ def parse_ship(
                 continue
             label = _norm(cells[0].xpath(".//text()").getall())
             value_cell = cells[1]
-            text = _norm(value_cell.xpath(".//text()").getall())
+            text = _node_text(value_cell)
             source_code = None
             if len(cells) > 2:
                 source_code = _norm(cells[2].xpath(".//a//text()").getall()) or None
@@ -444,7 +562,12 @@ def parse_ship(
         ]
 
     lifecycle = [
-        LabeledDate(label=item.label, text=item.text, date=item.date)
+        LabeledDate(
+            label=item.label,
+            text=item.text,
+            date=item.date,
+            category=LABEL_CATEGORIES.get(item.label),
+        )
         for item in base_rows
         if item.date is not None
     ]
@@ -508,6 +631,7 @@ def parse_ship(
         armament=armament,
         complement=complement,
         officers=officers,
+        fleets=_parse_fleets(root),
         history=_parse_history(root),
         sources=_parse_sources(root),
         notes=_section_text(root, "Notes on Ship"),
@@ -528,8 +652,15 @@ def _has_crewman(section_nodes) -> bool:
 
 
 def is_ship_page(selector: Selector) -> bool:
-    """A completeness check (Plan 4.3, step 6)."""
-    return bool(selector.xpath("//table[@id='ship_base']"))
+    """A completeness check (Plan 4.3, step 6): the base table and the footer.
+
+    The footer comes after ``#datacol``, so a body cut off anywhere in the
+    ship's data fails the check.
+    """
+    return bool(
+        selector.xpath("//table[@id='ship_base']")
+        and selector.xpath("//span[@id='copywrite_message'][contains(., 'Copyright')]")
+    )
 
 
 def is_not_found_page(selector: Selector) -> bool:

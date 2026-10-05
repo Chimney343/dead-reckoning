@@ -29,6 +29,9 @@ class LinkRef:
     href: str | None = None
     id: int | None = None
     kind: str | None = None
+    # The hover card's lines: a crewman's nation, roles and service years, or a
+    # linked ship's years, guns and type. Kept apart from the visible text.
+    tooltip: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -49,6 +52,7 @@ class LabeledDate:
     label: str
     text: str
     date: TDDate
+    category: str | None = None  # see parsing.ship_page.LABEL_CATEGORIES
 
 
 @dataclass
@@ -83,11 +87,26 @@ class OfficerRow:
 
 
 @dataclass
+class FleetRow:
+    """One row of the "Fleets" table: a fleet the ship served in."""
+
+    dates: str | None = None
+    from_date: TDDate | None = None
+    to_date: TDDate | None = None
+    fleet_id: int | None = None
+    fleet_name: str | None = None
+    commander_id: int | None = None
+    commander_name: str | None = None
+    source_code: str | None = None
+
+
+@dataclass
 class HistoryEvent:
     text: str
     date: TDDate | None = None
     battle_ids: list[int] = field(default_factory=list)
     ship_ids: list[int] = field(default_factory=list)
+    shipyard_ids: list[int] = field(default_factory=list)  # yards and places
     source_code: str | None = None
 
 
@@ -126,6 +145,7 @@ class ShipRecord:
     armament: list[ArmamentSet] = field(default_factory=list)
     complement: list[ComplementRow] = field(default_factory=list)
     officers: list[OfficerRow] = field(default_factory=list)
+    fleets: list[FleetRow] = field(default_factory=list)
     history: list[HistoryEvent] = field(default_factory=list)
     sources: list[SourceRef] = field(default_factory=list)
     notes: str | None = None

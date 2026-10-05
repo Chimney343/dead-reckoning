@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
-from threedecks.ua import build_user_agent, contact
+from threedecks.ua import MISSING_CONTACT_HELP, build_user_agent, contact
 
 BASE_URL = "https://threedecks.org"
 DELAY_SECONDS = 5
@@ -138,6 +138,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true", help="refetch pages already on disk")
     parser.add_argument("--only", action="append", default=[], help="fixture name(s) to fetch")
     args = parser.parse_args(argv)
+    if not contact():
+        print(f"error: {MISSING_CONTACT_HELP}", file=sys.stderr)
+        return 2
 
     fixtures = default_fixtures()
     if args.only:
@@ -146,13 +149,6 @@ def main(argv: list[str] | None = None) -> int:
 
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
     index = load_index()
-    who = contact()
-    if not who:
-        print(
-            "warning: THREEDECKS_CONTACT is not set; sending the placeholder "
-            "User-Agent. Set it before any real run.",
-            file=sys.stderr,
-        )
 
     pending = [
         f for f in fixtures if args.force or not (FIXTURE_DIR / f.filename).exists()

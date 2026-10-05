@@ -1,0 +1,2210 @@
+code,label,is_region
+04701,"Douglas, Isle of Man",false
+04702,Widnes,false
+04703,Cumbria,false
+04704,Cuerden,false
+04705,Eccleston,false
+04706,Davenham,false
+04707,"Darnall, Sheffield",false
+04708,Thornton,false
+04709,"St Anne's Hill, Liverpool",false
+04710,Linacre nr Bootle,false
+04711,Great Bolton,false
+04712,"Thingwell, Cheshire",false
+04801,Northwich,false
+04802,Ormskirk,false
+04803,Oulton,false
+04804,"Overthwaite, Beetham",false
+04805,"Pembrokeshire, UK",false
+04806,Pilling,false
+04807,Plymtree,false
+04808,Chesterfield,false
+04811,Rainford,false
+04812,"Ramsey, I of Man",false
+04813,Ribby,false
+04814,Richmond,false
+04816,Roosebeck,false
+04817,Denbighshire,false
+04818,"Schools Hill, Cheadle",false
+04819,Shropshire,false
+04820,Everton,false
+04821,Old Snydale,false
+04822,Solihull,false
+04823,Saint Bees,false
+04824,"St Chads, Poulton-le-Fylde",false
+04825,Saint Asaph,false
+04826,Stalmine,false
+04827,"Stoke Village, Plymouth",false
+04828,Bowness-on-Windermere,false
+04829,Stratford-upon-Avon,false
+04831,Kirkby Lonsdale,false
+04832,Surrey,false
+04834,Tarvin,false
+04835,Thornton in Lonsdale,false
+04836,Thorp Arch,false
+04837,Toxteth,false
+04838,Ulverston,false
+04839,"Ellel, Lancashire",false
+04842,Wavertree,false
+04843,Weobley,false
+04844,West Auckland,false
+04845,"West Derby, Liverpool",false
+04846,Westbury-on Trym,false
+04847,Westminster,false
+04848,"Whicham, Cumberland",false
+04849,Whiston,false
+04851,"Witton, Cheshire",false
+04852,Wivenhoe,false
+04853,Woodford,false
+04854,Woolton,false
+04855,York,false
+04856,Yorkshire,false
+04901,Moreton,false
+04903,Mount Vernon,false
+04904,Mylor Churchtown,false
+04905,Nantwich,false
+04906,Derbyshire,false
+04907,Newport,false
+04908,"Norfolk, UK",false
+04909,"Northumberland, UK",false
+04911,Greatacre,false
+04912,Caton,false
+04913,Pentre Llanrhaeadr,false
+04914,Lymm,false
+04915,Manchester,false
+04916,Heaton Norris,false
+04917,Millom,false
+04918,Milnthorpe,false
+04919,Minehead,false
+04921,Kirkham,false
+04922,Knowsley,false
+04923,"Warbrick, Liverpool",false
+04924,Tunstall,false
+04925,Leyland,false
+04926,Liscard,false
+04927,Lisson Grove,false
+04928,Litherland,false
+04929,Little Colan,false
+04931,"Hillcliff, Warrington",false
+04933,Hubberston,false
+04935,Huyton,false
+04936,Islington,false
+04937,Kent,false
+04938,Kingston,false
+04941,Greenbank,false
+04942,Grinsdale,false
+04943,Hambleton,false
+04944,Haverfordwest,false
+04946,Hereford,false
+04947,Heversham,false
+04948,Heysham,false
+04949,"Highfield, Liverpool",false
+04951,Denbigh,false
+04952,"Edgehill, Liverpool",false
+04953,Ellel,false
+04954,Etton,false
+04956,Flixton,false
+04957,Giggleswick,false
+04958,Great Crosby,false
+04960,"Beacon Rise, Stone",false
+04961,Cambridge,false
+04962,Dalemain,false
+04963,"Sandfield, Wallasey",false
+04964,Wakefield,false
+04965,Moss Side,false
+04966,"Devon, UK",false
+04967,Dorset,false
+04968,"Westmorland, place unspecified",false
+04969,"Blackley Hurst Hall, Billinge",false
+04970,"Ashburton, Devon",false
+04971,"Chorlton Hall, Backford",false
+04972,Church Green Lymm,false
+04973,Claughton,false
+04974,Cockerham,false
+04975,"Colton, Lancashire",false
+04976,Colwall Stone,false
+04977,Congleton,false
+04978,Warrington,false
+04979,Warminster,false
+04980,Homestead,false
+04981,Walton,false
+04982,"Carlisle, Cumbria",false
+04983,"Castle Godwyn, Gloucester",false
+04984,Caton Green,false
+04985,"Chard, Devon",false
+04986,Cheshire,false
+04987,Childer Thornton,false
+04988,Childwall,false
+04989,Chorley,false
+04990,Mile End Liverpool,false
+04992,Prescot,false
+04993,"Middleton, Tamworth",false
+04995,Caton Lancashire,false
+04996,Fairfield,false
+04998,Cumberland,false
+10000,Europe,false
+10100,Spain,false
+10101,Alicante,false
+10102,Barcelona,false
+10103,Bilbao,false
+10104,Cadiz,false
+10105,Figuera,false
+10106,Gibraltar,false
+10107,Coruña,false
+10108,Ávila,false
+10109,Beja,false
+10110,Santander,false
+10111,Seville,false
+10112,San Lucar,false
+10113,Vigo,false
+10114,Albacete,false
+10115,Puerto Santa Maria,false
+10116,Bragança,false
+10117,Córdoba,false
+10118,Extremadura,false
+10119,Faro,false
+10121,Galicia,false
+10122,Granada,false
+10123,"Gipuzkoa, Spain",false
+10124,Madrid,false
+10125,Málaga,false
+10126,"Mos, Pontevedra",false
+10127,Murcia,false
+10128,Renton,false
+10129,Olhão,false
+10131,Valladolid,false
+10199,"Spain, place unspecified",true
+10200,Portugal,false
+10201,Ameixeira,false
+10202,Lagos,false
+10203,Lisbon,false
+10204,Oporto,false
+10205,Ilha do Fayal,false
+10206,Setubal,false
+10207,Aveiro,false
+10208,Barcelos,false
+10209,Belém,false
+10210,Braga,false
+10211,carzon de Braganza,false
+10212,Cascais,false
+10213,Castelo Branco,false
+10214,Cernache do Bonjardim,false
+10215,Chaves,false
+10216,Coimbra,false
+10217,Penalva do Castelo,false
+10218,Evora,false
+10219,Fafe,false
+10221,Graja,false
+10222,Guarda,false
+10223,Guimaraes,false
+10224,Leiria,false
+10225,Lugo,false
+10226,Mouraz,false
+10227,Óbidos,false
+10228,Ribadeo,false
+10229,Porto,false
+10230,Ourém,false
+10231,Freixo,false
+10232,villa cova,false
+10233,Santarém,false
+10234,São Martinho da Gândara,false
+10235,"Ilha de São Miguel, Açores",false
+10236,"Sao Pedro lomar, Braga",false
+10237,Sintra,false
+10238,Tavira,false
+10239,Vila Nova de Gaia,false
+10242,Viseu,false
+10244,Vila Nova,false
+10252,Funchal,false
+10253,Vila Real,false
+10254,Tabula,false
+10255,"Pomar, Coimbra",false
+10299,"Portugal, port unspecified",true
+10300,Great Britain,false
+10301,"Ainsdale, Southport",false
+10302,Ovingham,false
+10399,"Great Britain, place unspecified",true
+10400,England and Wales,false
+10401,Barmouth,false
+10402,Bideford,false
+10403,Birkenhead,false
+10404,Bristol,false
+10405,Brixham,false
+10406,Broadstairs,false
+10407,Cawsand,false
+10408,Chepstow,false
+10409,Chester,false
+10410,Colchester,false
+10411,Cowes,false
+10412,Dartmouth,false
+10413,Deptford,false
+10414,Dover,false
+10415,Exeter,false
+10416,Folkstone,false
+10417,Frodsham,false
+10418,Gainsborough,false
+10419,Greenwich,false
+10420,Guernsey,false
+10421,Harwich,false
+10422,Hull,false
+10423,Ilfracombe,false
+10424,Ipswich,false
+10425,Isle of Man,false
+10426,Isle of Wight,false
+10427,Jersey,false
+10428,Kendal,false
+10429,King's Lynn,false
+10430,Lancaster,false
+10431,Lindale,false
+10432,Liverpool,false
+10433,London,false
+10434,Lyme,false
+10435,"Lancashire, place unspecified",false
+10436,Maryport,false
+10437,Milford Haven,false
+10438,New Shoreham,false
+10439,Newcastle upon Tyne,false
+10440,Newnham,false
+10441,North Shields,false
+10442,Northam,false
+10443,Norwich,false
+10444,Padstowe,false
+10445,Parkgate,false
+10446,Piel of Foulney,false
+10447,Plymouth,false
+10448,Poole,false
+10449,Portsery,false
+10450,Portsmouth,false
+10451,Poulton,false
+10452,Preston,false
+10453,Ramsgate,false
+10454,Ravenglass,false
+10455,River Thames,false
+10456,Rochester,false
+10457,Rotherhithe,false
+10458,Rye,false
+10459,Scarborough,false
+10460,Sheerness,false
+10461,Shields,false
+10462,Shoreham,false
+10463,Sidmouth,false
+10464,Southampton,false
+10465,Barton,false
+10466,Stockton,false
+10467,Stockwithe,false
+10468,Sunderland,false
+10469,Teignmouth,false
+10470,Topsham,false
+10471,Torbay,false
+10472,Wales,false
+10473,Whitby,false
+10474,Whitehaven,false
+10475,Bath,false
+10476,Workington,false
+10477,Yarmouth,false
+10478,Youghal,false
+10479,Conway,false
+10480,Falmouth (Eng.),false
+10481,Lymehouse (a) Limehouse,false
+10482,"Beaumont cote, Bolton le Sands, Lancashire",false
+10483,Beckermet,false
+10484,Ruthin,false
+10485,Lympstone,false
+10486,"Ballatoar, Isle of Man",false
+10488,Ashton-in-Makerfield,false
+10489,Aspull,false
+10490,Aughton,false
+10491,Dalton-in-Furness,false
+10492,"Bodfari, Flintshire",false
+10493,Bootle,false
+10494,Brampton Bryan,false
+10495,"Bromfield, Cumberland",false
+10496,"Brookhouse, Caton",false
+10497,"Bunbury, Cheshire",false
+10498,"Smithies, South Barnsley",false
+10499,"England, place unspecified",true
+10500,Scotland,false
+10501,Airth,false
+10502,Borrowstounness,false
+10503,Dundee,false
+10504,Glasgow,false
+10505,Greenock,false
+10506,Leith,false
+10508,Montrose,false
+10509,Ross,false
+10510,Saltcoats,false
+10511,"Largo, Fifeshire",false
+10512,Dumfries,false
+10513,Point Askaig,false
+10514,Cambletown,false
+10515,Portpatrick,false
+10516,Erwin,false
+10517,Aberdeen,false
+10518,Stranraer,false
+10519,Oban,false
+10520,Campbeltown,false
+10521,Loch Dochfour,false
+10522,Dumfriesshire,false
+10523,Edinburgh,false
+10524,Galloway,false
+10525,Gretna,false
+10526,Jedburgh,false
+10527,Killead,false
+10528,kincardineshire,false
+10529,Kirkcudbright,false
+10530,Kirkliston,false
+10531,Netherton,false
+10532,"Pentland Firth, UK",false
+10533,"Perth, Scotland",false
+10534,Tarbolton,false
+10535,Turnberry,false
+10599,"Scotland, place unspecified",true
+10600,Ireland,false
+10601,Cork,false
+10602,Dublin,false
+10603,Dungarvan,false
+10604,Galway,false
+10605,Kinsale,false
+10606,Limerick,false
+10607,Londonderry,false
+10608,Ringsend,false
+10609,Strangford,false
+10610,Waterford,false
+10611,Wexford,false
+10612,Belfast,false
+10613,Coleraine,false
+10614,Skibbereen,false
+10615,"Tonaghmore, Cloghernalaura",false
+10616,Tynan,false
+10617,Drogheda,false
+10618,Lough Neagh,false
+10699,"Ireland, place unspecified",true
+10700,France,false
+10702,Bayonne,false
+10703,Bordeaux,false
+10704,Brest,false
+10705,Calais,false
+10706,Camaret,false
+10707,Dieppe,false
+10708,Dinard,false
+10709,Dunkerque,false
+10710,Honfleur,false
+10711,Ile de Batz,false
+10712,La Rochelle,false
+10713,Le Havre,false
+10714,Les Sables,false
+10715,Lorient,false
+10716,Marseille,false
+10717,Mediterranean coast (France),false
+10718,Mindin,false
+10719,Morlaix,false
+10720,Nantes,false
+10721,Paimboeuf,false
+10722,Port Louis,false
+10723,Quimper,false
+10724,Rochefort,false
+10725,Saint-Brieuc,false
+10726,Saint-Malo,false
+10727,Saint-Nazaire,false
+10728,Saint-Tropez,false
+10729,Sète,false
+10730,Vannes,false
+10731,Anucita,false
+10732,Barbezieux-Saint-Hilaire,false
+10733,Beau sejour,false
+10734,Bergerac,false
+10735,Biarritz,false
+10736,Blaye,false
+10737,Cadillac,false
+10738,Castres,false
+10739,Chaillevette,false
+10741,Clairac,false
+10742,Étaules,false
+10743,Grateloup-Saint-Gayrand,false
+10744,La Tremblade,false
+10745,"Languedoc-Roussillon, France",false
+10746,Le Fleix,false
+10747,Limoges,false
+10748,Lormont,false
+10749,Lyon,false
+10751,Marennes-Hiers-Brouage,false
+10752,Mirambeau,false
+10753,Montpellier,false
+10754,Mornac,false
+10755,Nice,false
+10756,"Oléron, France",false
+10757,Paillet,false
+10758,Podensac,false
+10759,Rennes,false
+10761,Pauillac,false
+10762,Toulouse,false
+10763,Tournon-sur-Rhône,false
+10764,Basse Indre,false
+10799,"France, place unspecified",true
+10800,Netherlands,false
+10801,Alkmaar,false
+10802,Amersfoort,false
+10803,Bergen,false
+10804,Zaltbommel,false
+10805,Boskoop,false
+10806,Buiksloot,false
+10807,Brielle,false
+10808,Den Helder,false
+10809,Den Hoorn,false
+10810,Amsterdam,false
+10811,Eemnes,false
+10812,Egmond aan Zee,false
+10813,Fleringen,false
+10814,Friesland,false
+10815,Geertruidenberg,false
+10816,Goes,false
+10817,graft,false
+10818,Haarlem,false
+10819,Harlingen,false
+10820,Hasselt,false
+10821,Enkhuizen,false
+10822,Hoorn,false
+10823,Hindeloopen,false
+10824,Hulst,false
+10825,IJzendijke,false
+10827,Zaandam,false
+10828,Zuider Zee,false
+10829,Texel,false
+10830,Rotterdam,false
+10831,Dordrecht,false
+10832,Maze,false
+10833,Moerdijk,false
+10834,Hellevoetsluis,false
+10835,Monnickendam,false
+10836,Naarden,false
+10837,Nieuwendam,false
+10838,Obdam,false
+10839,Oldenzaal,false
+10840,Zeeland,false
+10841,Oostburg,false
+10842,Oostzaan,false
+10843,Ravenstein,false
+10844,Roosendaal,false
+10845,Leiden,false
+10846,Schellingwoude,false
+10847,Schoorl,false
+10848,Sint-Annaland,false
+10849,Sint-Maartensdijk,false
+10850,Middelburg,false
+10851,Vlissingen,false
+10852,Veere,false
+10853,Zeeland or Middelburg,false
+10854,Spierdijk,false
+10856,Stavoren,false
+10859,The Hague,false
+10860,Groningen,false
+10861,Utrecht,false
+10862,Werkendam,false
+10863,West-Souburg,false
+10864,Woerden,false
+10865,Zierikzee,false
+10866,Zwolle,false
+10867,Netherlands,false
+10869,Aalsmeer,false
+10870,Twisk,false
+10871,Leiderdorp,false
+10872,"Ameland, Netherlands",false
+10873,Wijk aan Zee,false
+10874,Gorinchem,false
+10875,Kampen,false
+10876,Kats,false
+10877,Katwijk aan Zee,false
+10878,Maarssen,false
+10879,Maassluis,false
+10880,Medemblik,false
+10899,"Netherlands, port unspecified",true
+10900,Denmark,false
+10901,København,false
+10902,Husum,false
+10903,Helsingør,false
+10904,Grådyb,false
+10905,Copenhagen,false
+10906,Ribe,false
+10994,Hornby,false
+10999,"Denmark, port unspecified",true
+11000,Germany,false
+11001,Pillau,false
+11002,Elbe,false
+11003,Emden,false
+11004,Hamburg,false
+11005,Hanover,false
+11006,Lübeck,false
+11007,Glückstadt,false
+11008,Ängelholm,false
+11009,Baden bei Wien,false
+11010,Bockhorn,false
+11011,Brandenburg,false
+11012,Bremen,false
+11013,Bremerlee,false
+11014,Cologne,false
+11015,Wolgast,false
+11016,Wardenburg,false
+11017,"Sylt, Germany",false
+11018,Feucht,false
+11019,Föhr,false
+11021,Frankenthal,false
+11022,Frankfurt,false
+11023,Goch,false
+11024,Halberstadt,false
+11025,Jever,false
+11026,Biebertal,false
+11027,Kronberg,false
+11028,Lütjenburg,false
+11029,Jemgum,false
+11031,Otterndorf,false
+11032,Lier/Leer,false
+11033,Rostock,false
+11034,Schleswig,false
+11035,Stadland,false
+11036,Stade,false
+11037,Stolberg,false
+11038,Stralsund,false
+11039,Germany,false
+11040,Delmenhorst,false
+11041,Dortmund,false
+11099,Germany - port unspecified,true
+11100,Belgium,false
+11101,Antwerp,false
+11102,Flanders,false
+11103,Brugge,false
+11104,Ghent,false
+11105,Leuven,false
+11106,Liège,false
+11107,Brussels,false
+11108,Doornik,false
+11109,Mechelen,false
+11199,"Belgium, port unspecified",true
+11200,Norway,false
+11201,Tønsberg,false
+11202,Bergen,false
+11203,Halden,false
+11204,Kristiansand,false
+11205,Trondheim,false
+11206,Stavanger,false
+11299,"Norway, port unspecified",true
+11300,Sweden,false
+11301,Göteborg,false
+11302,Ystad,false
+11303,Gothenburg,false
+11304,Listerlandet,false
+11305,Stockholm,false
+11306,Uddevalla,false
+11307,Varberg,false
+11308,Västervik,false
+11309,Ängelholm,false
+11399,"Sweden, port unspecified",true
+11400,Italy,false
+11401,Genova,false
+11402,Napoli,false
+11404,Trieste,false
+11405,"Gozo, Malta",false
+11406,Livorno,false
+11499,"Italy, port unspecified",true
+11500,Russia,false
+11501,Kronstadt,false
+11502,Odessa,false
+11599,"Russia, port unspecified",true
+11600,Mediterranean,false
+11601,Sardinia,false
+11699,"Mediterranean, port unspecified",true
+11700,Latvia,false
+11798,Switzerland,false
+11799,"Latvia, port unspecified",true
+11800,Greece,false
+11898,Cephalonia,false
+11900,Poland,false
+11901,Gdańsk,false
+11902,Kołobrzeg,false
+11903,Szczecin,false
+11904,Szczecin (stettin),false
+11905,Ustka,false
+20000,Mainland North America,false
+20100,Rhode Island,false
+20101,Bristol (RI),false
+20102,Little Compton,false
+20103,Newport,false
+20104,North Kingston,false
+20105,Providence,false
+20106,Tiverton,false
+20107,Warren,false
+20108,"Warwick, RI",false
+20109,Westerley,false
+20110,Barrington,false
+20111,Chopmist,false
+20112,Narragansett,false
+20113,Smithfield,false
+20114,Cranston,false
+20199,"Rhode Island, port unspecified",true
+20200,Maine,false
+20201,Bath,false
+20202,Berwick,false
+20203,Biddeford,false
+20204,Calais (Maine),false
+20205,Camden,false
+20206,Troy,false
+20207,Freeport,false
+20208,Portland,false
+20209,Prospect,false
+20210,Richmond,false
+20211,Robbinston,false
+20212,Rockland,false
+20213,Sheepscutt River,false
+20214,Wiscasset,false
+20215,Kittery Point,false
+20216,Orrington,false
+20217,Penobscot,false
+20218,Thomaston,false
+20219,Gardiner,false
+20220,Bangor,false
+20221,St. George,false
+20222,Falmouth,false
+20223,Nesterbury,false
+20224,Hampden,false
+20225,Hallowell,false
+20226,Nobleborough,false
+20227,Brewer,false
+20299,"Maine, port unspecified",true
+20300,New Hampshire,false
+20301,Piscataqua,false
+20302,Portsmouth (NH),false
+20303,North Hampton,false
+20399,"New Hampshire, port unspecified",true
+20400,Massachusetts,false
+20401,Massachusetts Bay,false
+20402,Amesbury,false
+20403,Arundel,false
+20404,Boston,false
+20405,Chatham,false
+20406,Cohasset,false
+20407,Dighton,false
+20408,Duxbury,false
+20409,Freetown (Mass.),false
+20410,Georgetown,false
+20411,Hingham,false
+20412,Kingston (Mass.),false
+20413,Marblehead,false
+20414,Marshfield,false
+20415,New Bedford,false
+20416,Newbury,false
+20417,Salem,false
+20418,Salisbury,false
+20419,Salfatudas,false
+20420,Scituate,false
+20421,Swansea,false
+20422,Weymouth,false
+20423,Charlestown,false
+20424,Newburyport,false
+20425,Nantucket,false
+20426,Plymouth,false
+20427,Dartmouth,false
+20428,Somerset,false
+20429,Sandwich,false
+20430,"Braintree, MA",false
+20431,Medford,false
+20432,Rochester. MA,false
+20433,"Swansea, MA",false
+20434,Taunton,false
+20435,"Cambridge, MA",false
+20436,Dedham,false
+20499,"Massachusetts, port unspecified",true
+20500,Connecticut,false
+20501,Bridgeport,false
+20502,Guildford,false
+20503,Haddam,false
+20504,New Haven,false
+20505,New London,false
+20506,Middletown,false
+20507,Hartford,false
+20508,Fairfield,false
+20509,Killingworth,false
+20510,Weathersfield,false
+20511,Seabrook,false
+20512,Mystic,false
+20514,Glastonbury,false
+20599,"Connecticut, port unspecified",true
+20600,New York,false
+20601,Brookhaven,false
+20602,Long Island,false
+20603,Sag Harbor,false
+20604,Fort Orange,false
+20605,New Rochelle,false
+20606,"Rochdale, Queens, NY",false
+20699,New York,true
+20700,Delaware,false
+20701,Wilmington,false
+20799,"Delaware, port unspecified",true
+20800,New Jersey,false
+20801,Delaware River,false
+20802,Eastern New Jersey,false
+20803,Milwell,false
+20804,Perth Amboy,false
+20805,Wharton,false
+20806,Burlington,false
+20807,Newark,false
+20808,Cohanzie,false
+20899,"New Jersey, port unspecified",true
+20900,Pennsylvania,false
+20901,Marcus Hook,false
+20902,Philadelphia,false
+20903,Pittsburgh,false
+20999,"Pennsylvania, port unspecified",true
+21000,Maryland,false
+21001,Annapolis,false
+21002,Baltimore,false
+21003,North Potomac,false
+21004,Oxford,false
+21005,Pamunkey,false
+21006,Patuxent,false
+21007,Talbot County,false
+21008,Wye River,false
+21009,Cecil County,false
+21010,Choptank,false
+21011,Pocomoke,false
+21012,St. Mary's River,false
+21013,Londontowne,false
+21014,Anne Arundel County,false
+21015,Warwick,false
+21016,Kent County,false
+21017,Calvert County,false
+21018,Charles County,false
+21019,Somerset County,false
+21020,Frederick County,false
+21021,Cambridge County,false
+21022,Dorchester County,false
+21023,St. Mary's County,false
+21024,Snow Hill,false
+21025,Port of Tobacco,false
+21027,Eastern Shore,false
+21028,Hollywood,false
+21099,"Maryland, port unspecified",true
+21100,Virginia,false
+21101,Elizabeth River,false
+21102,Hampton,false
+21103,Lower James River,false
+21104,Norfolk,false
+21105,Northampton County,false
+21106,Potomac river,false
+21107,Rappahannock,false
+21108,South Potomac,false
+21109,Upper James River,false
+21110,Williamsburg,false
+21111,York River,false
+21112,Vatt (location undetermined),false
+21113,Accomac,false
+21114,Urbanna,false
+21115,Richmond (VA),false
+21116,Hampton Roads,false
+21117,Alexandria,false
+21118,Petersburg,false
+21119,Cumberland County,false
+21121,Sussex County,false
+21122,Eastern Shore,false
+21123,Elizabeth,false
+21124,Buckingham,false
+21125,Prince William County,false
+21127,Lynchburg,false
+21128,Gloucester County,false
+21129,Leesburg,false
+21130,Portsmouth,false
+21131,Greensville County,false
+21132,Halifax,false
+21133,Essex County,false
+21134,Hardy County,false
+21135,Putnam County,false
+21136,York County,false
+21137,New Virginia,false
+21138,Mathews,false
+21139,Jefferson County,false
+21140,Kempsville,false
+21141,Princess Anne,false
+21142,Warwick County,false
+21143,Yorktown,false
+21144,Culpeper,false
+21145,Dinwiddie County,false
+21146,Albemarle County,false
+21147,Jamestown,false
+21148,Bermuda Hundred,false
+21199,"Virginia, port unspecified",true
+21200,North Carolina,false
+21201,Bertie County,false
+21202,Chowan river,false
+21203,New Bern,false
+21204,Hyde County,false
+21205,Roanoke,false
+21206,Beaufort,false
+21207,Brunswick,false
+21208,Cape Fear,false
+21209,Edenton,false
+21210,Wilmington,false
+21211,Bridgeton,false
+21212,Barnwell,false
+21215,Halifax,false
+21216,Elizabeth City,false
+21217,Gates City/County,false
+21218,Salisbury,false
+21219,Hanover County,false
+21220,Franklin County,false
+21221,Granville County,false
+21223,Asheville,false
+21224,Pasquotank,false
+21225,Randolph County,false
+21226,Stokes County,false
+21227,Fayetteville,false
+21228,Jackson,false
+21229,Portsmouth,false
+21299,"North Carolina, port unspecified",true
+21300,South Carolina,false
+21301,Beaufort,false
+21302,Charleston,false
+21304,Georgetown,false
+21305,Amelia Township,false
+21306,Dorchester,false
+21307,Darlington,false
+21308,Greenville,false
+21309,Camden,false
+21310,Sumter,false
+21311,Waccamaw,false
+21312,Columbia,false
+21313,Columbia County,false
+21314,"Aiken Co, SC",false
+21315,"Edgefield County, SC",false
+21316,"Richmond County, nr Augusta, SC",false
+21317,"Augusta, SC",false
+21399,"South Carolina, place unspecified",true
+21400,Georgia,false
+21401,Savannah,false
+21402,Sunbury,false
+21403,Tybee Island,false
+21404,"Cumberland Island,Georgia",false
+21405,Jekyll Island,false
+21406,Augusta,false
+21407,Bainbridge,false
+21408,Baker County,false
+21411,Blakely,false
+21412,Burke County,false
+21413,Columbus,false
+21414,Crawford County,false
+21415,Effingham,false
+21416,Early County,false
+21417,Fort Gaines,false
+21418,Houston County,false
+21419,Macon,false
+21420,Madison,false
+21421,Oglethorpe,false
+21422,Monroe County,false
+21423,Randolph County,false
+21424,Thomas County,false
+21425,Screven County,false
+21426,Jones County,false
+21427,Troup County,false
+21428,Sanderville,false
+21429,Fayette County,false
+21499,"Georgia, port unspecified",true
+21500,Florida,false
+21501,St. Augustine,false
+21502,Pensacola,false
+21503,Amelia Island,false
+21504,Key West,false
+21505,Indian River,false
+21506,East Florida,false
+21507,Tampa,false
+21508,Apalachicola,false
+21509,St. Joseph,false
+21510,Magnolia,false
+21511,Port Leon,false
+21512,"St. Marks, FL",false
+21513,Indianola,false
+21514,New Smyrna,false
+21515,Cedar Key,false
+21516,Jacksonville,false
+21517,St. Andrews,false
+21519,South Port,false
+21520,Pawcatuck,false
+21522,Madison County,false
+21523,Benton County,false
+21524,Columbia County,false
+21525,Gadsen County,false
+21527,Hernandez County,false
+21528,Jackson County,false
+21529,Hickstown,false
+21530,Jefferson County,false
+21531,Newport,false
+21532,Quincy,false
+21533,Washington County,false
+21534,Tallahassee,false
+21535,Woolsey,false
+21599,"Florida, port unspecified",true
+21600,Gulf coast,false
+21601,New Orleans,false
+21602,La Balise,false
+21603,Louisiana,false
+21604,Biloxi,false
+21605,Mississippi,false
+21606,Mobile,false
+21607,Vicksburg (MS),false
+21608,"Alexandria, Rapides Parish",false
+21609,Ascension Parish,false
+21610,Assumption Parish,false
+21611,Lafayette Parish,false
+21612,"Wilkinson County, MS",false
+21613,Avoyelles Parish,false
+21614,"Macon County, AL",false
+21615,"Bayou Sara, West Feliciana Parish",false
+21617,Catahoula Parish,false
+21618,Claiborne Parish,false
+21619,"Donaldsonville, Ascension Parish",false
+21620,East Baton Rouge Parish,false
+21621,East Feliciana Parish,false
+21622,"Union Parish, LA",false
+21623,"Greenville, Jefferson County, MS",false
+21624,"Hempstead County, AR",false
+21625,"Huntsville, AL",false
+21626,Iberville Parish,false
+21627,Jefferson Parish,false
+21628,Lafourche Parish,false
+21629,Livingston Parish,false
+21630,"Amite County, MS",false
+21631,"Adams County, MS",false
+21632,Alabama (port unknown),false
+21633,Natchitoches Parish,false
+21634,"Warren County, MS",false
+21635,Africatown AL,false
+21636,Orleans Parish,false
+21637,Ouachita Parish,false
+21638,Plaquemines Parish,false
+21639,"Porterville, AL",false
+21640,Rapides Parish,false
+21641,St. Bernard Parish,false
+21642,St. Charles Parish,false
+21643,St. Helena Parish,false
+21644,St. James Parish,false
+21645,St. John the Baptist Parish,false
+21646,St. Landry Parish,false
+21647,St. Martin Parish,false
+21648,St. Mary Parish,false
+21649,Washington Parish,false
+21650,West Baton Rouge Parish,false
+21651,West Feliciana Parish,false
+21652,"Baton Rouge, LA",false
+21653,"Clarke County, AL",false
+21654,"Natchez, MS",false
+21655,"Concordia Parish, LA",false
+21656,"Madison Parish, LA",false
+21657,"Point Coupee Parish, LA",false
+21658,"Cherokee County, AL",false
+21659,"Baulding, MS",false
+21660,"Brandon, MS",false
+21661,"Claiborne County, MS",false
+21662,"Columbus, MS",false
+21663,"Port Gibson, MS",false
+21664,"Franklin County, MS",false
+21665,"Greenwood, MS",false
+21666,"Hinds County, MS",false
+21667,"Jackson County, MS",false
+21668,"Jackson, MS",false
+21669,"Bigbee, Washington County",false
+21670,"Carroll County, MS",false
+21671,"Lawrence County, MS",false
+21672,"Panola County, MS",false
+21673,"Vicksburg, MS",false
+21674,"Princetown, MS",false
+21675,"Baldwin County, AL",false
+21676,"Monroe County, AL",false
+21677,"Lowndes County, AL",false
+21678,"Montgomery, AL",false
+21679,"Franklin, LA",false
+21680,"Mooresville, AL",false
+21681,"Perry County, AL",false
+21682,"Selma, AL",false
+21683,"Talledega, AL",false
+21684,"Shelby County, AL",false
+21685,"Wilcox County, AL",false
+21686,"Barbour County, AL",false
+21687,"Benton County, AL",false
+21688,"Cahaba, AL",false
+21689,"Monroe, LA",false
+21690,"Jackson, LA",false
+21691,"Attakapas, LA",false
+21692,"Grand Coteau, LA",false
+21693,"Thibodaux, LA",false
+21694,"Coosa County, AL",false
+21695,"Dallas County, AL",false
+21696,"Quincy, AL",false
+21697,"Henry County, AL",false
+21698,"Green County, AL",false
+21699,"Gulf Coast, port unspecifed",true
+21700,Canada,false
+21701,Quebec,false
+21702,New Brunswick,false
+21703,St. John,false
+21704,Newfoundland,false
+21705,Nova Scotia,false
+21706,Halifax,false
+21707,Mahone Bay,false
+21708,"Roseway, NS",false
+21710,Trois-Rivières,false
+21799,"Canada, port unspecified",true
+21800,Kentucky,false
+21801,Smithfield,false
+21802,Louisville,false
+21804,Barton,false
+21805,Frankfort,false
+21806,Lexington,false
+21807,Paris,false
+21899,"Kentucky, port unspecified",true
+21900,Other North America,false
+21901,Newport and Boston,false
+21902,Newport and Salem,false
+21903,New England,false
+21904,Carolinas,false
+21906,"Washington, DC",false
+21907,Arkansas (port unknown),false
+21908,"Batesville, AR",false
+21909,Albany,false
+21911,Cape Breton,false
+21912,"Columbus, MO",false
+21913,Missouri - place unspecified,false
+21914,"St.Louis, MO",false
+21915,"Franklin, MO",false
+21919,Ohio - place unspecified,false
+21920,Indiana - place unspecified,false
+21921,Greensboro,false
+21922,"Quincy, OH",false
+21923,California - place unspecified,false
+21924,"Paris, MO",false
+21925,"Cincinatti, OH",false
+21926,Vermont - place unspecified,false
+21927,"Camden, AR",false
+21928,"Rock Creek, IL",false
+21929,"Charleston, WV",false
+21999,"USA, location unspecified",true
+22000,Tennessee,false
+22001,Nashville,false
+22002,Fayetteville,false
+22004,Memphis,false
+22005,Giles County,false
+22006,Jackson County,false
+22007,Shelby County,false
+22099,"Tennessee, port unspecified",true
+22100,Texas,false
+22101,Woodville,false
+22102,Galveston,false
+22103,Montgomery County,false
+22104,Anderson,false
+22105,Austin,false
+22106,Aransas,false
+22107,Houston,false
+22108,Aransas Bay,false
+22109,Independence,false
+22110,Brazos,false
+22111,Brazos River,false
+22112,Brazos Santiago,false
+22113,Bastrop,false
+22114,Comal County,false
+22115,Centreville,false
+22116,Clinton,false
+22117,Columbia,false
+22118,Cuero,false
+22119,Fayette County,false
+22120,Fort Graham,false
+22121,Foster County,false
+22122,Freestone County,false
+22123,Goliad,false
+22124,Gonzales,false
+22126,Grimes County,false
+22127,Guadalupe,false
+22128,Harris County,false
+22129,"Henderson, Rusk County",false
+22130,Huntsville,false
+22131,Port Lavaca,false
+22132,Leon County,false
+22133,Lexington,false
+22134,Harrisburg,false
+22135,Indian Point,false
+22136,Liberty County,false
+22137,Lubbock County,false
+22138,Matagorda,false
+22140,Indianola,false
+22141,New Braunfels,false
+22142,Fort Bend,false
+22143,La Salle,false
+22144,Laureles,false
+22145,Polk County,false
+22146,Newton County,false
+22147,Victoria County,false
+22148,Waco,false
+22149,Lavaca Bay,false
+22150,Washington County,false
+22151,Richmond,false
+22152,Linn's Landing,false
+22153,Linnville,false
+22154,Victoria,false
+22155,Woodbury County,false
+22156,Corpus Christi,false
+22157,Brazoria,false
+22158,San Antonio,false
+22159,Dallas County,false
+22160,Milam County,false
+22161,Chapel Hill,false
+22162,Wharton,false
+22163,San Jacinto,false
+22164,Matagorda Bay,false
+22165,Port Caddo,false
+22166,Port Isabel,false
+22167,Powderhorn,false
+22168,Quintana,false
+22169,Rio Grande,false
+22170,Sabine,false
+22171,Sabine City,false
+22172,Sabine Lake,false
+22173,Sabine Pass,false
+22174,Sabine River,false
+22175,Saluria,false
+22176,St. Joseph's Island,false
+22177,Velasco,false
+22178,Pass Cavallo,false
+22199,"Texas, port unspecified",true
+23000,California,false
+23099,"California, place unspecified",true
+24008,Arequipa,false
+30000,Caribbean,false
+31100,Hispaniola,false
+31102,Isabela,false
+31103,Monte Christi,false
+31104,Samana,false
+31106,San Domingo (a) Santo Domingo,false
+31107,Ocoa,false
+31108,Nizao,false
+31109,Puerto de Plata,false
+31110,Isla Saona,false
+31199,"Hispaniola, unspecified",true
+31200,Puerto Rico,false
+31201,San Juan,false
+31202,Ponce,false
+31203,Guayama,false
+31204,San Germán,false
+31299,"Puerto Rico, port unspecified",true
+31300,Cuba,false
+31301,Bahia Honda,false
+31302,Banes,false
+31303,Cabanas,false
+31304,Caibarien,false
+31305,Canasí,false
+31306,Cardenas,false
+31307,Cienfuegos,false
+31308,"Cuba, south coast",false
+31309,"Cuba, west coast",false
+31310,Estuary of River Guane,false
+31311,Guanimar,false
+31312,Havana,false
+31313,Isla de Pinas,false
+31314,"Magari, Manzanillo",false
+31315,Mariel,false
+31316,Matanzas,false
+31317,"Matanzas province, north",false
+31318,"Matanzas province, south",false
+31319,Nuevitas,false
+31320,Puerto Padre,false
+31321,Sagua,false
+31322,San Juan de los Remedios,false
+31323,Santiago de Cuba,false
+31324,Trinidad de Cuba,false
+31326,Batabanó,false
+31327,Baracoa,false
+31328,Punta Macurijes,false
+31329,South Keys,false
+31330,Puerto Principe,false
+31331,Holguín,false
+31332,Bacuranao,false
+31333,San Jose,false
+31334,"San Lazaro, Havana",false
+31399,"Cuba, port unspecified",true
+31400,Other Spanish Caribbean,false
+31401,San Andrés,false
+31499,"Spanish Caribbean, unspecified",true
+32100,Dutch Caribbean,false
+32110,Curaçao,false
+32111,Willemstad,false
+32120,Aruba,false
+32130,Bonaire,false
+32140,St. Maarten,false
+32141,Cul de Sac (St. Maarten),false
+32150,St. Eustatius,false
+32151,Saba,false
+32199,"Dutch Caribbean, colony unspecified",true
+32200,Dutch Guianas,false
+32201,Guiana,false
+32202,Nova Zeelandia (Wild Coast),false
+32230,Essequibo,false
+32240,"Suriname, place unspecified",false
+32241,Paramaribo,false
+32250,Berbice,false
+32299,"Dutch Guianas, colony unspecified",true
+32300,Other Dutch Americas,false
+32301,Bijsterpan,false
+32399,"Other Dutch Americas, colony unspecified",true
+33200,Tortola,false
+33299,"Tortola, port unspecified",true
+33300,Anguilla,false
+33399,"Anguilla, port unspecified",true
+33400,Antigua,false
+33401,Saint John (Antigua),false
+33402,Barbuda,false
+33499,"Antigua, place unspecified",true
+33500,St. Kitts,false
+33599,"St. Kitts, port unspecified",true
+33600,Nevis,false
+33601,Newcastle (Nevis),false
+33699,"Nevis, port unspecified",true
+33700,Montserrat,false
+33799,"Montserrat, port unspecified",true
+33800,Dominica,false
+33801,Roseau,false
+33802,St. Marc,false
+33899,"Dominica, place unspecified",true
+34100,St. Lucia,false
+34199,"St. Lucia, port unspecified",true
+34200,Barbados,false
+34201,King's Harbour,false
+34202,Speightstown,false
+34299,"Barbados, place unspecified",true
+34300,St. Vincent,false
+34399,"St. Vincent, port unspecified",true
+34400,Grenada,false
+34401,Grand Mal,false
+34402,Paraelek,false
+34403,Corinth,false
+34404,Palmish,false
+34405,Morne Delue,false
+34406,Providence,false
+34407,Clarkes Court,false
+34408,Bellevue,false
+34409,Revolution Hall,false
+34410,St George,false
+34411,St. Cyr,false
+34412,Resource,false
+34413,Hope Vale,false
+34414,Hermitage,false
+34415,Grand Ance,false
+34416,L'Esterre and Columbiere,false
+34417,Union,false
+34418,Balthazard,false
+34419,Bacolets and Isle Rhome,false
+34420,River Antoine and Mount Saint Harg,false
+34421,Mount Alexander,false
+34422,Goodson,false
+34423,Caliving,false
+34424,Fontenoy,false
+34425,Adelphi,false
+34426,Rose Mount,false
+34427,Mount Pleasant,false
+34428,Point Saline,false
+34429,Snell Hall,false
+34430,La Digue,false
+34431,Morne Salone,false
+34432,Carriacou,false
+34433,Windsor,false
+34434,Beausefour,false
+34435,Kettle Point,false
+34436,Springs,false
+34437,Vendôme,false
+34438,Florida,false
+34439,Carmile,false
+34499,"Grenada, place unspecified",true
+34500,Trinidad,false
+34599,"Trinidad, port unspecified",true
+34600,Tobago,false
+34601,Zion Hill,false
+34699,"Tobago, port unspecified",true
+35100,Jamaica,false
+35101,Annotto Bay,false
+35102,Antonia,false
+35103,Black River,false
+35104,Falmouth (Jam.),false
+35105,Lucea (a) St. Lucea,false
+35106,Martha Brae,false
+35107,Montego Bay,false
+35108,Morant Bay,false
+35109,Port Maria,false
+35110,Port Royal,false
+35111,Saint Ann's Bay,false
+35112,Savanna la Mar,false
+35113,Spanish Town,false
+35114,Kingston,false
+35116,Smoaky Hall Plantation Trelawny,false
+35117,Hide Hall Estate Trelawny,false
+35118,Hopewell Estate,false
+35119,Dumfries,false
+35120,Queenbithe Estate,false
+35121,"Killbryde, New Canaan Estate",false
+35199,"Jamaica, place unspecified",true
+35200,Bahamas,false
+35201,New Providence,false
+35202,Turk's Island,false
+35203,Nassau,false
+35204,Cat Island,false
+35205,Exuma,false
+35206,Heneague,false
+35299,"Bahamas, port unspecified",true
+35300,British Guiana,false
+35301,Cumingsberg,false
+35302,Stabroek,false
+35304,Demerara,false
+35305,Kingston (Demerera),false
+35399,"British Guina, port unspecified",true
+35400,British Honduras,false
+35401,Mosquito Shore,false
+35499,"British Honduras, port unspecified",true
+35500,Other British Caribbean,false
+35502,Antigua or Dominica,false
+35503,Barbados and Jamaica,false
+35504,Dominica or Jamaica,false
+35505,Jamaica or St. Kitts,false
+35507,British Leewards,false
+35508,Bermuda,false
+35509,Hamilton (Bermuda),false
+35510,Becquia,false
+35511,Grand Caymans,false
+35512,Providence Island,false
+35599,"British Caribbean, colony unspecified",true
+36100,Martinique,false
+36101,Fort-Royale,false
+36102,Saint-Pierre,false
+36199,"Martinique, place unspecified",true
+36200,Guadeloupe,false
+36201,Basse-Terre,false
+36202,Pointe-à-Pitre,false
+36203,Marie-Galante,false
+36204,"Grande-Terre, port unspecified",false
+36299,"Guadeloupe, place unspecified",true
+36300,French Guiana,false
+36301,Cayenne,false
+36302,Oyapock,false
+36399,"French Guiana, port unspecified",true
+36400,Saint-Domingue,false
+36401,Tortuga,false
+36402,Arcahaie,false
+36403,Cap Français,false
+36404,Cayes (Les),false
+36405,Cul-de-Sac,false
+36406,Fort Dauphin,false
+36407,Jacmel,false
+36408,Jérémie,false
+36409,Léogane,false
+36410,Môle Saint Nicolas,false
+36411,Petit-Goâve,false
+36412,Port-au-Prince,false
+36413,Port-de-Paix,false
+36414,Saint-Marc,false
+36415,Île à Vache,false
+36416,Cap Tiberon,false
+36420,Gonaïve,false
+36421,Aribonite,false
+36422,Morne Rouge,false
+36423,le Mustic (Moustique),false
+36424,Boucassin,false
+36425,L'Estère,false
+36426,Mont. de Chanteloup,false
+36427,Port-Margot,false
+36428,Chicahominy,false
+36429,Dondon,false
+36430,Longemalle (Habitation),false
+36431,Limonade,false
+36432,Fond,false
+36433,Ouanaminthe,false
+36434,Charbonniere,false
+36435,Nippes,false
+36436,Belair,false
+36437,Boucan-Champagne,false
+36438,Petite Anse,false
+36439,Rue Bourbon,false
+36440,Grand Coâve,false
+36442,Bon Repos,false
+36443,Port à l'écu,false
+36444,"Belair, rue de Vaudreuil",false
+36446,Fond-d'Icaques,false
+36499,"Saint-Domingue, then Haiti, port unspecified",true
+36500,Other French Caribbean,false
+36599,"French Caribbean, colony unspecified",true
+37000,Danish West Indies,false
+37010,St. Croix,false
+37020,St. Thomas,false
+37030,St. John (Virgin Islands),false
+37040,"Spanish Town, British Virgin Islands",false
+37099,"Danish West Indies, colony unspecified",true
+38100,St. Barthélemy (Sweden),false
+38101,"Gustavia, St. Barthélemy",false
+38199,"St. Barthélemy, port unspecified",true
+39000,Other Caribbean,false
+39001,Caribbean (colony unspecified),false
+39003,Orici,false
+39004,Bottomaneau,false
+39040,Bottomaneau (location undetermined),false
+39999,"Caribbean, port unspecified",true
+40000,Spanish American Mainland,false
+41200,Spanish Circum-Caribbean,false
+41201,"New Spain, port unspecified",false
+41202,Campeche,false
+41203,Veracruz,false
+41204,Guatemala,false
+41205,Santo Tomas,false
+41206,Portobelo,false
+41207,Cartagena,false
+41208,Santa Marta,false
+41210,"Venezuela, port unspecified",false
+41211,Borburata,false
+41212,Caracas,false
+41213,Cumana,false
+41214,La Guaira,false
+41215,Margarita,false
+41216,Orinoko,false
+41217,Rio de la Hacha,false
+41218,Darien,false
+41219,Nombre de Dios,false
+41220,Rattan (a) Roatán,false
+41221,Puerto Cabello,false
+41222,Isla de Aves,false
+41223,Coro,false
+41224,Maracaibo,false
+41225,Nueva Barcelona,false
+41226,"Guayana, Venezuela",false
+41227,Caracas Coast and Tucacas,false
+41228,San Juan de los Cayos,false
+41229,"Tortuga Island, Venezuela",false
+41231,San Felipe,false
+41232,El Salvador,false
+41252,"Trujillo, Honduras",false
+41253,Puerto de Caballos (Puerto Cortes),false
+41297,"Panama, Port unspecified",false
+41298,"Honduras, port unspecified",false
+41299,"Spanish Circum-Caribbean,unspecified",true
+42000,Rio de la Plata,false
+42001,Buenos Aires,false
+42002,Montevideo,false
+42003,Colonia de Sacramento,false
+42004,Maldonado,false
+42005,Río Negro,false
+42006,Buceo,false
+42007,Punta del Este,false
+42014,Asunción,false
+42015,Concepción del Uruguay,false
+42016,Curupaity,false
+42017,Gualeguay,false
+42018,Humaitá,false
+42099,"Rio de la Plata, port unspecified",true
+43000,Peru,false
+43001,Lima,false
+43002,"Ica, Peru",false
+43099,"Peru, port unspecified",true
+44000,Chile,false
+44001,Valparaiso,false
+44002,Talcahuano,false
+45000,Ecuador,false
+45099,"Ecuador, port unspecified",true
+46000,Pacific Central America,false
+46001,Panama City,false
+50000,Brazil,false
+50100,Amazonia,false
+50101,Portos do Norte,false
+50102,Maranhão,false
+50103,Pará,false
+50104,Guajano,false
+50105,Rio Amazona,false
+50106,"Ceará, port unspecified",false
+50107,Macapá,false
+50108,Belém,false
+50109,São Luis,false
+50110,Aracaty,false
+50111,Tapajé,false
+50112,Manaus,false
+50199,"Amazonia, port unspecified",true
+50200,Bahia,false
+50201,Pôrto Seguro,false
+50202,Rio Real,false
+50203,Rio São Francisco,false
+50204,Taipu,false
+50205,Alcobaça,false
+50206,Aldeia Velha,false
+50207,Aracaju,false
+50208,Belmonte,false
+50209,Boaventura,false
+50210,Canavieiras,false
+50211,Caravelas,false
+50212,"Caravelas, Mucuri e Vitória",false
+50213,Estância,false
+50214,Ilhéus,false
+50215,Laranjeiras,false
+50216,Mucuri,false
+50217,Rio Cotinguiba,false
+50218,Santa Cruz,false
+50219,"Sergipe, place unspecified",false
+50220,Valença,false
+50221,Vila Viçosa,false
+50222,Maguay,false
+50223,Prado,false
+50299,"Bahia, place unspecified",true
+50300,Pernambuco,false
+50301,"Alagoas, place unspecified",false
+50302,Ilha de Itamaric,false
+50303,Maceió,false
+50304,Catuamo and Maria Farinha,false
+50305,Porto de Galinhas,false
+50306,Paraíba,false
+50307,Rio Grande do Norte,false
+50308,Açu,false
+50309,Fernando de Noronha,false
+50310,Patacho,false
+50311,Recife,false
+50312,Rio Paraíba do Norte,false
+50313,Olinda,false
+50314,Penedo,false
+50315,Vila Bela,false
+50399,"Pernambuco, place unspecified",true
+50400,Southeast Brazil,false
+50402,Baía de Botafogo,false
+50403,Baía de Sepetiba,false
+50404,Cabo de Búzios,false
+50405,Cabo Frio,false
+50406,Campos,false
+50407,Cananéia,false
+50408,Copacabana,false
+50409,Dois Rios,false
+50410,Ilha de Paquetá,false
+50411,Ilha das Palmas,false
+50412,Ilha Grande,false
+50413,Ilha de Lobes,false
+50414,Ilha de Marambaia,false
+50415,Angra dos Reis,false
+50416,Macaé,false
+50417,Mangaratiba,false
+50418,Maricá,false
+50419,Paranaguá,false
+50420,Parati,false
+50421,Ponta Negro,false
+50422,Rio de Janeiro,false
+50423,Rio de Janeiro province,false
+50424,"Rio de Janeiro, Sao Paulo, Santa Catarina",false
+50425,Angra dos Reis e Mangaratiba,false
+50426,"Rio Grande do Sul, place unspecified",false
+50427,Rio São Jeso,false
+50428,Santos,false
+50429,Antonina,false
+50430,São Sebastião,false
+50431,Santa Catarina,false
+50432,Ariró,false
+50433,Ubatuba,false
+50434,Vitória,false
+50435,Laguna,false
+50436,Ilha dos Porcos,false
+50437,São Vicente,false
+50438,Espírito Santo,false
+50439,Benevente,false
+50440,Campos e Macaé,false
+50441,Cananéia e Iguape,false
+50442,Caraguatatuba,false
+50443,Guarapari,false
+50444,Guaratiba,false
+50445,Guaratuba,false
+50446,Iguape,false
+50447,Itabapoana,false
+50448,Itaguaí,false
+50449,Itaipu,false
+50450,Itajaí,false
+50451,Itapemirim,false
+50452,Itapocorói,false
+50453,Jerumirim,false
+50454,Jerumirim e Mangaratiba,false
+50455,Mambucaba,false
+50456,Porto Alegre,false
+50457,Porto Belo,false
+50458,Portos do Sul,false
+50459,Rio das Ostras,false
+50460,Rio Doce,false
+50461,Rio Grande,false
+50462,Rio São Francisco do Sul,false
+50463,Rio São João,false
+50464,São Mateus,false
+50465,Vila Nova,false
+50466,Araçariguama,false
+50467,Barbacena,false
+50468,Florianópolis,false
+50469,Jacareí,false
+50471,Mariana Minas Gerais,false
+50472,Minas Gerais State,false
+50473,Niterói,false
+50474,Curitiba,false
+50475,Santa Catarina State,false
+50476,São Paulo,false
+50477,Silvianópolis,false
+50478,Sorocaba,false
+50479,Tatuí,false
+50481,Viana,false
+50482,Cerrito,false
+50483,Fazenda do Largo,false
+50484,Guarainha,false
+50485,Imbetiba,false
+50486,Ipanema,false
+50487,Itacuruçá,false
+50488,Leopoldina,false
+50489,Pelotas,false
+50490,Piúma,false
+50491,São João da Barra,false
+50499,"Southeast Brazil, port unspecified",true
+50500,Other Brazil,false
+50599,"Brazil, place unspecified",true
+60000,Africa,false
+60100,Senegambia and off shore Atlantic,false
+60101,Albreda,false
+60102,Arguim,false
+60103,Bissagos,false
+60104,Bissau,false
+60105,Cacheu,false
+60106,Casamance,false
+60107,Galam,false
+60108,Gambia,false
+60109,Gorée,false
+60110,James Fort,false
+60111,"Joal, or Saloum River",false
+60112,Oibo,false
+60113,Portudal,false
+60114,Portuguese Guinea,false
+60115,Rio Bolola,false
+60116,Rio Bramiah,false
+60117,Rio Grande,false
+60118,Saint-Louis,false
+60119,French Africa (Goree or Senegal),false
+60126,Cape Verde Islands,false
+60127,Santa Catarina do Fogo,false
+60128,Madeira,false
+60129,Azores,false
+60141,Canary Islands,false
+60142,Tenerife,false
+60143,McCarthy Island,false
+60145,River Gambie,false
+60146,Dakar,false
+60147,"São Nicolau, Cape Verde",false
+60148,Senegal,false
+60199,"Senegambia and offshore Atlantic, port unspecified",true
+60200,Sierra Leone,false
+60201,Banana Islands,false
+60202,Bance/Bunce Island,false
+60203,Ben's Island,false
+60204,Cacandia,false
+60205,Côte de Malaguette (runs through to Cape Palmas,false
+60206,Delagoa,false
+60207,Freetown,false
+60208,Gallinhas,false
+60209,Garraway Roads,false
+60210,Iles de Los,false
+60211,Iles Plantain,false
+60212,Rio Nunez,false
+60213,Rio Pongo,false
+60214,Scarcies,false
+60216,Settra Kou,false
+60217,Sherbro,false
+60218,Siraboom,false
+60219,Sugary (Siekere),false
+60220,Sierra Leone estuary,false
+60221,Bundu,false
+60241,Mano,false
+60242,River Kissey,false
+60243,Bathurst (Leopold),false
+60244,Kissy,false
+60245,Charlotte,false
+60246,Gloucester,false
+60247,Hastings,false
+60248,Waterloo,false
+60249,Regent,false
+60253,Aberdeen,false
+60254,Wellington,false
+60256,Wilberforce,false
+60257,Newlands,false
+60258,Murray,false
+60259,Leicester,false
+60260,Fraser Town,false
+60261,Denham Town (Lumley),false
+60262,Lumley,false
+60263,Kissy and Wellington,false
+60264,Goderich,false
+60265,Kent,false
+60266,Kent School,false
+60267,Mountain School,false
+60268,Portuguese Town,false
+60269,Western District,false
+60270,Mountains,false
+60271,Tombo,false
+60272,Sussex,false
+60273,Calmont,false
+60274,Allenstown,false
+60299,"Sierra Leone, port unspecified",true
+60300,Windward Coast,false
+60301,Barason,false
+60302,Bassa,false
+60303,Batoa,false
+60304,Bercou,false
+60305,Cap des Palmes,false
+60306,Cape Mount (Cape Grand Mount),false
+60307,Cape Petit Mount,false
+60308,Cape Grand Mount,false
+60309,Cape Lahou,false
+60310,Cess,false
+60311,Grand Cess,false
+60312,Petit Cess,false
+60313,Dembia,false
+60314,Drouin,false
+60315,Grand Bassa,false
+60316,Little Bassa,false
+60317,Grand Bassam,false
+60318,Grand Junk,false
+60319,Little Junk,false
+60321,Grand Mesurado,false
+60322,Petit Mesurado,false
+60324,Rio Assini,false
+60325,Rio Cavalie,false
+60326,Rio Sinou,false
+60327,River Kissey,false
+60328,Sassandra,false
+60329,Grand Sestos,false
+60330,Rock Sestos,false
+60331,St. Paul,false
+60332,Tabou,false
+60333,Trade Town,false
+60334,Liberia,false
+60335,Ivory Coast,false
+60336,Young Sestos,false
+60337,Little Sestos,false
+60338,Kru Settra,false
+60339,Cape Palmas,false
+60340,Settra Kru,false
+60341,Sugury,false
+60399,"Windward Coast, place unspecified",true
+60400,Gold Coast,false
+60402,Danish Gold Coast,false
+60403,Acoda (Akka or Acquida),false
+60404,Accra,false
+60405,Alampo,false
+60407,Anomabu and Apam,false
+60408,Anomabu,false
+60409,Apammin,false
+60410,Apollonia,false
+60411,Axim,false
+60412,Cape Coast Castle,false
+60413,Chama,false
+60414,Christiansborg,false
+60415,Elmina,false
+60416,Eva,false
+60417,Kormantine,false
+60418,Lagoo,false
+60419,Mouree,false
+60420,Ningo,false
+60421,Rio Volta,false
+60422,Sekondi,false
+60423,Siekere,false
+60424,Tantumquerry,false
+60425,Wiamba,false
+60426,Gold Coast from Kormatine to Accra,false
+60427,Gold Coast east of Kormantine,false
+60428,Pokesoe (Princes Town),false
+60429,Boutry,false
+60431,Takoradi,false
+60432,Padeora,false
+60433,Nanga,false
+60434,Prampram,false
+60499,"Gold Coast, port unspecified",true
+60500,Bight of Benin,false
+60501,Benin,false
+60502,"Costa da Mina, place unspecified",false
+60503,Aghway,false
+60504,Agora,false
+60505,Amokou,false
+60506,Ardra,false
+60507,Badagry/Apa,false
+60508,Dixcove,false
+60509,Epe,false
+60510,Popo,false
+60511,Little Popo,false
+60512,Grand Popo,false
+60513,Ife,false
+60514,Jacquin,false
+60515,"Whydah, Ouidah",false
+60516,Keta,false
+60517,"Lagos, Onim",false
+60518,Lamo River,false
+60519,Lay,false
+60520,Legas,false
+60521,Oerê,false
+60522,Pataquery,false
+60523,Porto Novo,false
+60524,Rio Forcados/Formosa/Benin,false
+60525,Rio Nazareth,false
+60526,Rio Nun,false
+60530,"Bristol Island, Nazareth",false
+60599,"Bight of Benin, place unspecified",true
+60600,Bight of Biafra and Gulf of Guinea islands,false
+60601,Andony,false
+60602,Barabalemo,false
+60603,Bilbay,false
+60604,Bimbia,false
+60605,Bonny,false
+60607,Bundy,false
+60608,Calabar,false
+60609,Cameroons,false
+60610,Cameroons River,false
+60611,Cape Baxos,false
+60612,Cap Lopez,false
+60613,Cap Lopez And Cabo Santa Catarina,false
+60614,Cape Lopez and Annobon,false
+60615,Corisco,false
+60616,Corisco and Princes Island,false
+60617,Fockey,false
+60618,Forke,false
+60619,Formosa,false
+60620,Gabon,false
+60621,Liverpool River,false
+60622,New Calabar,false
+60623,Quaqua,false
+60624,River Brass,false
+60625,River del Rey,false
+60626,Timbeys,false
+60627,Rio Nazareth,false
+60628,Calabary,false
+60635,Duke Town,false
+60636,Tom Shotts Town,false
+60637,Creek Town,false
+60638,Ekrikok towns,false
+60639,Old Town,false
+60660,Gulf of Guinea islands,false
+60661,Annobon,false
+60662,Epee and Princes Islands,false
+60663,Fernando Po,false
+60664,Fernando Po and Cameroons,false
+60665,Fernando Po and Princes Islands,false
+60666,Juda and Princes Islands,false
+60667,"Juda, Epee, Princes Island, and Annobon",false
+60668,Princes Island,false
+60669,Princes Island and Annobon,false
+60670,Princes Island and Cape Lopez,false
+60671,Princes Island and São Tomé,false
+60672,"Principe, Cap Lopez, Annobon",false
+60673,São Tomé,false
+60674,São Tomé and Annobon,false
+60675,São Tomé and Cape Lopez,false
+60676,São Tomé or Princes Island,false
+60677,Costa de Africa (mainland coast around S,false
+60699,"Bight of Biafra and Gulf of Guinea Islands, port",true
+60700,West Central Africa and St. Helena,false
+60701,Alecuba,false
+60702,Ambona,false
+60703,Ambriz,false
+60704,Ambrizete,false
+60705,"Barra de Cariba, Luanda",false
+60706,Bengo,false
+60707,Benguela,false
+60708,Benguela Velho,false
+60709,Boary,false
+60710,Bomara,false
+60711,Cabinda,false
+60712,Cabo Lopo Gonçalves,false
+60713,Cape Mole,false
+60714,Cape Padroon,false
+60715,Coanza River,false
+60716,Congo North,false
+60717,Congo River,false
+60718,Rio Zaire,false
+60719,Grenada Point,false
+60720,Iron Point,false
+60721,Kacongo,false
+60722,Kilongo,false
+60723,Liverpool River,false
+60724,Loango,false
+60725,Malembo,false
+60726,Mayumba,false
+60727,Metrueba,false
+60728,"Mossulo, Luanda",false
+60729,Mpinda,false
+60730,Novo Redondo,false
+60731,Penido,false
+60732,Quicombo,false
+60733,Salinas,false
+60734,Luanda,false
+60735,Rio Dande (N of Luanda),false
+60739,Ascension Island,false
+60740,St. Helena,false
+60741,Soyo,false
+60742,"Ponta da Lenha, Congo River",false
+60799,"West Central Africa and St. Helena, port unspecified",true
+60800,East Africa and Indian Ocean islands,false
+60801,Anghoza River,false
+60802,Cabo Delgado,false
+60803,Cape of Good Hope,false
+60805,Costa Leste Occidental,false
+60806,Ibo,false
+60807,Inhambane,false
+60808,Quirimba,false
+60809,Kilwa,false
+60810,Lourenço Marques,false
+60811,Madagascar,false
+60812,Mauratan,false
+60813,Morondova,false
+60814,Port Dauphin,false
+60815,St. Mary's Island,false
+60816,Tulia,false
+60817,Mocambo,false
+60819,Momboza or Zanzibar,false
+60820,Mozambique,false
+60821,"Pomba, Monfia",false
+60822,Quilimane,false
+60823,Sofala,false
+60824,St. Lawrence,false
+60826,Zanzibar,false
+60831,Mascarene Islands,false
+60832,Bourbon,false
+60833,Ile de France,false
+60834,Port-Louis,false
+60836,Johanna Island,false
+60837,Mauritius (Ile de France),false
+60838,"Ascension, Assomption, and Bourbon",false
+60839,Angossy Bay,false
+60840,Antongil Bay,false
+60841,Assada,false
+60842,Boina,false
+60843,Bombetoc; Bombetoka; Mahajanga; Majunga,false
+60844,Bonnivoul,false
+60845,Farantangane,false
+60846,Foulpointe,false
+60847,Luna Roads,false
+60848,Manabullo,false
+60849,Manazary; Manajary,false
+60850,Mangally,false
+60851,Maningare; Manningare,false
+60852,Massalege; Massaliege; Massaly; Magelage;,false
+60853,Matitanana,false
+60854,Morondava,false
+60855,Morongany; Morongambo; Maringando,false
+60856,Pointe Larée,false
+60857,Sadian Bon Porto,false
+60858,Saint Augustine's Bay; St. Augustin Bay,false
+60859,Sainte Luce,false
+60860,Tsiribihina,false
+60861,Vohemar; Wohemar Bay,false
+60862,Delagoa Bay,false
+60863,Swahili coast,false
+60864,Lindi,false
+60865,Malimbe,false
+60866,Manguira,false
+60867,Mikindani,false
+60868,Mongale,false
+60869,"Comoro islands, port unspecified",false
+60870,Mohilla,false
+60871,"Seychelles, port unspecified",false
+60872,Horn of Africa,false
+60898,"East Africa, port unspecified",false
+60899,"Southeast Africa and Indian Ocean islands, port",true
+60900,Other Africa,false
+60901,Princes Island and Elmina,false
+60902,Angola (possibly New Calabar),false
+60903,Senegambia or Sierra Leone,false
+60908,West of Cape Apolonia,false
+60909,Angola to Ardra,false
+60912,Windward + Ivory + Gold + Benin,false
+60913,C.C. Castle and Windward,false
+60914,Gold Coast + Bight of Benin + Bight of Biafra,false
+60915,Bights,false
+60916,Windward Coast (Nunez - Assini),false
+60917,"Gold Coast, Fr. definition",false
+60981,Causacoo (location undetermined),false
+60982,Cape St Martha (location undetermined),false
+60983,Casnasonis (location undetermined),false
+60984,Massa (location undetermined),false
+60985,Touau-Toro (location undetermined),false
+60986,Cape Logas (location undetermined),false
+60999,"Africa, port unspecified",true
+70000,Middle East,false
+70100,Other Middle East,false
+70199,"Middle East, port unspecified",true
+70200,Red Sea and Gulf of Aden,false
+70201,Aden,false
+70202,Assab,false
+70203,Berbera,false
+70204,Hodeidah,false
+70205,Jeddah,false
+70206,Massawa,false
+70207,Port Sudan,false
+70208,Suakin,false
+70299,"Red Sea and Gulf of Aden, port unspecified",true
+70400,Persian Gulf and the Gulf of Oman,false
+70401,Abu Dhabi,false
+70402,Bahrain,false
+70403,Bandar Abbas,false
+70404,Bander Jask,false
+70405,Bander Kangan,false
+70406,Bander Lingah,false
+70407,Bander Rig,false
+70408,Basrah,false
+70409,Chah Bahar,false
+70410,Damman,false
+70411,Doha,false
+70412,Dubai,false
+70413,Guwadar,false
+70414,Jubayl,false
+70415,Kuwait,false
+70416,Manamah,false
+70417,Muharraq,false
+70418,Muscat,false
+70419,Ras al-Hadd,false
+70420,Ras al-Khaymah,false
+70421,Suhar,false
+70422,Sur,false
+70423,Zubarah,false
+70499,"Persian Gulf and Gulf of Oman, port unspecified",true
+80000,Asia,false
+80200,South Asia,false
+80202,"Northwestern India, port unspecified",false
+80203,Bombay,false
+80204,Cambay,false
+80205,Daman,false
+80206,Diu,false
+80207,Goa,false
+80208,Surat,false
+80209,"Malabar Coast, port unspecified",false
+80210,Anjengo,false
+80211,Calicut,false
+80212,Cochin,false
+80213,Tellicherry,false
+80214,Arakan,false
+80215,Angarcale,false
+80216,Dianga,false
+80217,Bengal,false
+80218,Calcutta,false
+80219,Chandernagore,false
+80220,Chittagong,false
+80221,Kedgeree/Kagery,false
+80222,"Coromandel Coast, port unspecified",false
+80223,Bimilipatam,false
+80224,Coringa,false
+80225,Cuddalore,false
+80226,Devanampatnam,false
+80227,Ganjam,false
+80228,Jaggernatpooram,false
+80229,Karaikal,false
+80230,Madras/Fort St. George,false
+80231,Madurai,false
+80232,Masulipatam,false
+80233,Nagapatam,false
+80234,Pondichéry,false
+80235,Porto Novo,false
+80236,Pulicat,false
+80237,Tegnapatam/Fort St. David,false
+80238,Tranquebar,false
+80239,Vizagapatam,false
+80240,Wattara,false
+80241,Yanam,false
+80242,Ceylon,false
+80243,Colombo,false
+80244,Galle,false
+80245,Trincomalee,false
+80299,"South Asia, port unspecified",true
+80400,Insular Southeast Asia,false
+80402,Alor,false
+80403,Bali,false
+80404,Batak,false
+80405,Borneo; Kalimantan,false
+80406,Banjarmasin,false
+80407,Burma,false
+80408,Cambodia,false
+80409,Ende,false
+80410,Flores,false
+80411,Java,false
+80412,Bantam; Banten,false
+80413,Batavia,false
+80414,Lombok,false
+80415,Malay Peninsula; Malaya,false
+80416,Kedah; Quedah,false
+80417,Malacca,false
+80418,Penang,false
+80419,Singapore,false
+80420,Manado,false
+80421,Manggarai,false
+80422,"Mentawai Islands, port unspecified",false
+80423,Moluccas; Malukus,false
+80424,Amboina; Ambon,false
+80425,Banda,false
+80426,Laguna,false
+80427,Nias,false
+80428,Papua,false
+80429,"Philippines, port unspecified",false
+80430,Bohol,false
+80431,Cebu,false
+80432,Leyte,false
+80433,Manila,false
+80434,Mindanao,false
+80435,Negros,false
+80436,Panay,false
+80437,Riau,false
+80438,Samar,false
+80439,Sulawesi,false
+80440,Makassar,false
+80441,"Sulu Archipelago, port unspecified",false
+80442,Jolo,false
+80443,Sumatra,false
+80444,Acheh; Banda Aceh,false
+80445,Bencoolen; Benkulu; Bengkulu,false
+80446,Pryaman,false
+80447,Sumbawa,false
+80448,Tawi-Tawi,false
+80449,Ternate,false
+80450,"Thailand, port unspecified",false
+80451,Timor,false
+80452,"Vietnam, port unspecified",false
+80499,"Southeast Asia, port unspecified",true
+80600,East Asia,false
+80602,"China, port unspecified",false
+80603,Macau,false
+80604,"Japan, port unspecified",false
+80605,Nagasaki,false
+80606,"Korea, port unspecified",false
+80699,"East Asia, port unspecified",true
+80900,Other Asia,false
+80999,"Asia, port unspecified",true
+90000,Other,false
+90200,Americas,false
+90201,"Guecka, location undetermined",false
+90202,"Rocus, location undetermined",false
+90203,"Kalas, location undetermined",false
+90204,"Imfors Bay, location undetermined",false
+90205,"Marrader (Morada?), location undetermined",false
+90299,"Americas, port unspecified",true
+90400,Spanish Americas,false
+90401,"Spanish American Mainland, port unspecified",false
+90499,"Spanish Americas, port unspecified",true
+90500,British Americas,false
+90501,"Kingston, Savannah, Maryland",false
+90599,"British Americas, port unspecified",true
+90600,Asia e Africa,false
+90601,"Asia e Africa, port unspecified",false
+90700,Non-geographical,false
+90703,British plantations,false
+90704,Non-British,false
+90705,Captured by WIC,false
+90706,Captured interloper,false
+90707,Prize (unknown place),false
+90708,Prize (taken from Dutch),false
+90709,Prize (taken from French),false
+90710,Prize (taken from Spanish),false
+90711,Sold at sea to another vessel,false
+90712,Wreck,false
+90713,Slaves rescued at sea from a shipwreck,false
+90714,Prize (taken from Portuguese),false
+90715,Prize (taken from USA),false
+90716,Taken at sea from pirates,false
+90717,Seized at sea by Spanish officials,false
+90718,"Iberian World, port unspecified",false
+90719,At sea,false
+90799,"Other, non Geographical",true
+99800,Codes without labels,false
+99801,???,false

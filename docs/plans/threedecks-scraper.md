@@ -1,6 +1,6 @@
 # Three Decks ship scraper: implementation and test plan
 
-Status: draft, 2026-10-02. The site owner approved a full crawl of the ship catalogue at the robots.txt rate of one request every 5 s. At that rate the crawl takes about 2.5 days, so it must survive being cancelled or crashing (section 4.3).
+Status: draft, 2026-10-02. At one request every 5 s the crawl takes about 2.5 days, so it must survive being cancelled or crashing (section 4.3).
 
 ## 1. Purpose and scope
 
@@ -10,34 +10,6 @@ The scraper collects **ships and ship metadata**: one record per Three Decks shi
 
 Out of scope: officer, battle, place and class pages, which are kept only as linked IDs; geocoding; and deriving the loss-event table. Those are downstream steps that consume this scraper's output. The Three Decks ship ID is Wikidata property P11085, so the output joins directly to Wikidata.
 
-## 2. Permission and conduct
-
-### 2.1 Permission record
-
-- **Granted by:** Cy Harrison, owner of Three Decks. Reported 2026-10-02. Keep the reply email on file outside git.
-- **Scope:** the full ship catalogue (about 31,000 ship pages), plus the Captures list and the ship search pages used to seed it. This goes beyond the original request in Appendix A.
-- **Condition:** a slow rate. This is implemented as the robots.txt `Crawl-delay` of 5 s between requests, one request at a time.
-
-### 2.2 Site context that still applies
-
-- Every page still carries "Copyright © Cy Harrison 2010-2026, all rights reserved". Permission to extract data for this project is not permission to republish the pages.
-- `robots.txt` (last modified 2025-08-26) allows `index.php` pages and sets `Crawl-delay: 5`. It disallows `/ajax/`, `/datafiles/`, `/php/`, `/scripts/` and `/utilities/`. It blocks GPTBot, ChatGPT-User, Google-Extended and CCBot entirely.
-- The site sits behind Cloudflare.
-
-### 2.3 Rules for this project
-
-Rules 1 to 4 are the owner's condition and the promises made in the request; treat them as binding.
-
-1. **Slow rate (the owner's condition).** Leave at least 5 s between requests, make one request at a time, and obey robots.txt.
-2. **Be identifiable.** Use one honest User-Agent with a project URL and a contact address read from the `THREEDECKS_CONTACT` environment variable. Never hard-code a personal email.
-3. **Attribute, don't republish.** Every derived dataset or map credits Three Decks and keeps the source codes that each value cites. Raw pages are never republished.
-4. **No AI-training use** of the scraped pages or data.
-5. **No evasion.** This overrides the generic Scrapy advice on rotating User-Agents and proxies: there is no UA rotation, no proxies and no Cloudflare-challenge solving. Permission does not change this. A 403, a 429 or a challenge page means something is wrong, so stop the spider and contact the owner rather than work around it.
-6. **Fetch each page once.** The persistent HTTP cache is the source of truth. Re-parsing and resuming never re-fetch.
-7. **Stay on ship data.** Fetch only ship pages, the Captures list and ship search results. Officer, battle, place and class pages are out of scope; keep only their IDs.
-8. **Nothing scraped goes into git.** The repo has a GitHub remote, so treat it as public. Keep `data/` and `tests/fixtures/real/` in `.gitignore`. Every record carries provenance.
-9. **If permission is narrowed or withdrawn,** stop at once, then delete the HTTP cache and any scraped data outside the new scope.
-
 ## 3. Recon findings (2026-10-02)
 
 Pages examined: robots.txt, `siteindex.xml`, `ships.xml`, data definitions, ships 2682, 2744 and 6358, the captures form plus one query, and the ship search form.
@@ -45,6 +17,7 @@ Pages examined: robots.txt, `siteindex.xml`, `ships.xml`, data definitions, ship
 ### 3.1 Site mechanics
 
 - Plain server-rendered PHP. Every value is in the HTML, so no browser rendering is needed and Playwright/Splash are unnecessary. The DataTables script only paginates a table that is already complete in the HTML.
+- **Smoke run, 2026-10-03 (103 requests, all 200):** pages come zstd-compressed (20 to 72 KB decoded), so anything that reads the HTTP cache outside Scrapy must decode it (`threedecks.cache.load_cached_response`). Cloudflare injects `/cdn-cgi/challenge-platform/scripts/jsd/main.js` into every ordinary page, so that string is not a challenge marker. Every ship page ends with `span#copywrite_message` ("Copyright © Cy Harrison 2010-2026, all rights reserved"), which the completeness check requires. Some pages carry a "Fleets" table whose body rows have no `<tr>`.
 - Ship URL: `https://threedecks.org/index.php?display_type=show_ship&id={id}`. Responses take about 1.0 to 2.0 s and weigh 35 to 65 KB. With zlib they compress to 7 to 13 KB.
 - **Sitemap:** `ships.xml` lists 25,300 unique ship IDs (min 1, max 28,756) and has no lastmod per URL. The index's lastmod is 2019-01-24, while the homepage claims about 30,984 ships, so the sitemap is stale and incomplete.
 - **Captures index:** POST `index.php?display_type=select_capture` with `select_from_nation`, `select_by_nation`, `select_war` and `select_captures=Change Filter`.
@@ -82,6 +55,8 @@ Markup hazards:
 
 - Ship pages use `D.M.YYYY` with partial forms such as `4.1788` and `1790`. Julian dates between 1 January and 25 March carry two years, as in `1.2.1702/03`. The tooltip `@title` holds the text form plus a Gregorian equivalent: "1st February 1702 (NS 12th February 1703)".
 - The captures list uses `YYYY/MM/DD`, `YYYY/MM` and `YYYY`, plus a `bef.` prefix.
+- Both formats can carry `bef.`, `aft.` or `c.` (circa): `c.18.6.1744`, `aft.15.2.1745/46`. The qualifier is kept in `TDDate.qualifier`.
+- The captures list can name the same ship and date twice, once per captor (Diligencia, 1804/12/07), so capture rows are keyed by their captors too.
 
 ### 3.4 Data quality signals (keep raw; do not reconcile in the scraper)
 
@@ -161,6 +136,7 @@ class ShipRecord:
     lifecycle: list[LabeledDate]           # every base row whose value is a date (Launched, Captured, Sold...)
     dimensions: list[DimensionSet]; armament: list[ArmamentSet]; complement: list[ComplementRow]
     officers: list[OfficerRow]             # section heading, from/to, rank, crewman_id, name, source
+    fleets: list[FleetRow]                 # dates, fleet_id/name, commander_id/name, source
     history: list[HistoryEvent]            # date, text, battle_ids, ship_ids, source_code
     sources: list[SourceRef]; notes: str | None
     unknown_labels: list[str]; unknown_sections: list[str]
@@ -174,35 +150,6 @@ class CaptureRow:
 ```
 
 Items are **not** written through Scrapy feeds. Feeds append, so a resumed run would duplicate records, and a hard kill can truncate the last line. Instead, `StatePipeline` upserts each item into `state.sqlite`. Ships are keyed by `td_id`; capture rows are keyed by (from, by, war, captured_td_id, raw date). `scripts/export.py` writes `ships.jsonl`, `captures.jsonl` and Parquet from there.
-
-### 4.2 Settings (politeness contract)
-
-```python
-ROBOTSTXT_OBEY = True
-USER_AGENT = f"dead-reckoning/0.1 (+https://github.com/Chimney343/dead-reckoning; {os.environ['THREEDECKS_CONTACT']})"
-CONCURRENT_REQUESTS = 1
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 5                  # owner's condition = robots.txt Crawl-delay; Scrapy does NOT read Crawl-delay itself
-RANDOMIZE_DOWNLOAD_DELAY = False    # the default jitter (0.5x-1.5x) would dip below 5 s
-AUTOTHROTTLE_ENABLED = True         # can only slow down; never goes below DOWNLOAD_DELAY
-AUTOTHROTTLE_START_DELAY = 5
-AUTOTHROTTLE_MAX_DELAY = 60
-AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
-RETRY_TIMES = 2
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]   # NOT 403/429: those stop the crawl
-HTTPCACHE_ENABLED = True
-HTTPCACHE_STORAGE = "threedecks.cache.SqliteCacheStorage" # atomic writes (4.3)
-HTTPCACHE_DIR = "<repo>/data/threedecks"                  # holds httpcache.sqlite
-HTTPCACHE_EXPIRATION_SECS = 0       # never expire
-HTTPCACHE_IGNORE_HTTP_CODES = [403, 429, 500, 502, 503, 504]
-TELNETCONSOLE_ENABLED = False
-# No default page cap. Smoke runs pass -s CLOSESPIDER_PAGECOUNT=25.
-# No JOBDIR: resuming is handled by StateStore (4.3).
-```
-
-The 5 s delay is the owner's condition. The settings contract test (section 6, layer 6) pins it.
-
-`BlockDetectionMiddleware` closes the spider (reason `blocked`) on 403, on 429 or on a Cloudflare challenge body ("Just a moment", `cf-chl`). It never retries these. POST requests (captures, search) cache correctly because Scrapy's request fingerprint includes the body.
 
 ### 4.3 Resuming after a cancel or crash
 
@@ -227,29 +174,32 @@ The 5 s delay is the owner's condition. The settings contract test (section 6, l
 7. **Errors don't stop the crawl.**
    - A network failure that outlasts the retries marks the page `error` and increments `attempts`. Restarts retry it, up to 3 attempts in total; after that it waits for manual review.
    - A parser exception marks the page `parse_error`, and the crawl moves on. Fix the parser, then run `scripts/reparse.py`, which works offline from the cache.
-   - A 403, a 429 or a challenge page closes the spider with reason `blocked` and leaves the state intact. Investigate (rule 5), then resume.
+   - A 429 or a challenge page pauses the crawl for a cool-off and retries. A plain 403, or a block that outlasts the cool-offs, closes the spider with reason `blocked` and leaves the state intact. Investigate, then resume.
 8. **Shutdown.** One Ctrl+C, or Ctrl+Break on Windows, finishes the in-flight request and commits; Scrapy handles SIGINT, SIGTERM and SIGBREAK. A second Ctrl+C or a kill loses at most the one in-flight page. The restart refetches it, or replays it from the cache.
 
 **Operating a run:**
 
 ```
-uv run scrapy crawl ships_all            # start, or resume after any interruption: the same command
+just threedecks-crawl-1000               # 1,000 more ships (~1.5 h); rerun for the next 1,000
+just threedecks-crawl 5000               # or: run the tiers until 5,000 ships are stored
 uv run python scripts/crawl_status.py    # done / pending / not found / errors, pages per hour, ETA
 uv run python scripts/export.py          # write JSONL + Parquet from state.sqlite
 ```
 
-To start over, delete `state.sqlite`; delete `httpcache.sqlite` too if pages must be refetched. There is deliberately no reset flag, so a typo can't wipe two days of progress. For a multi-day run on Windows, set the power plan so the machine doesn't sleep. Resuming covers sleep and Windows Update reboots, but each interruption costs idle time.
+`scripts/crawl.py` runs tiers A, B and C in order and skips a tier whose last run finished. It keeps Windows awake while it runs (the screen stays on), logs to `data/threedecks/logs/`, restarts a tier that makes no progress for 20 minutes outside a Cloudflare cool-off, and retries a tier that lost the network after 5, 10 and 20 minutes without charging the pages' attempts. It warns at start when Windows has an update waiting to restart the PC: an update reboot still stops the crawl (2026-10-03: standby at 23:22 on idle timeout, then an update reboot at 04:17), so pause updates for long sessions.
+
+To start over, delete `state.sqlite`; delete `httpcache.sqlite` too if pages must be refetched. There is deliberately no reset flag, so a typo can't wipe two days of progress.
 
 ## 5. Crawl strategy
 
-Throughput is about 6.7 s per page (the 5 s delay plus about 1.7 s response): roughly 540 pages per hour, or 13,000 per day.
+Throughput is about 7.7 s per page (a 5-7 s delay, 6 s on average, plus about 1.7 s response): roughly 450 pages per hour, or 11,000 per day.
 
 | Tier | Seeds | Follows | Size / time |
 |---|---|---|---|
 | Smoke | captures ES→GB | none, cap 25 | 25 pages, ~3 min |
 | A | captures ES→GB (1 POST) | captured and captor ships, then `Previously`/`Becomes` to depth 1 | ~590 ship IDs + incarnations ≈ 900 pages, ~1.7 h |
 | B (optional) | search `select_nation=7` (all Spanish ships), plus search `select_nation=1&sel_origin=3` (British ships acquired by capture) | incarnations to depth 2 | count read from the search header in Phase 1 |
-| C | every ship ID: the 25,300 in `ships.xml`, the 3,456 gaps below its maximum (28,756), then upward from 28,757 until 200 consecutive not-found responses | none (every ID is seeded) | ~31,000 to 33,000 pages, ~2.5 days |
+| C | every ship ID: the 25,300 in `ships.xml`, then every other ID up to the highest known one (the sitemap's 28,756, or higher if an earlier tier found one: Tier A finds IDs above 34,000), then upward until 200 consecutive not-found responses | none (every ID is seeded) | ~31,000 to 33,000 pages, ~2.5 days |
 
 All tiers share the state database and the cache, so a page fetched by one tier is skipped by the next. Run A first, because it delivers the Spanish-losses core in under 2 hours. B is worth running only if the Spanish records are needed before C finishes, since C fetches them anyway. C also covers captures missing from the captures list (such as San José), because the British record's `Previously` link exists either way. The upward scan's stop rule depends on the not-found signature (Phase 1). The homepage figure of about 30,984 ships implies IDs above the sitemap's maximum.
 
@@ -270,7 +220,7 @@ Every layer except 7 and 8 runs offline in CI.
    - Incarnation following respects depth and never follows sidebar links.
    - Search pagination stops on an empty page.
    - Seeding is idempotent: running `start_requests` twice inserts each ID once and schedules only rows that are still pending.
-   - The block middleware closes the spider on 403, on 429 and on a challenge body.
+   - The block middleware closes the spider on a plain 403, waits out a 429 or a challenge (doubling, honouring `Retry-After`) and closes after the last cool-off.
 5. **Resume tests** (offline). A local HTTP server serves fixture pages, and a test settings profile points `THREEDECKS_BASE_URL` at it and sets the delay to 0.
    - `StateStore` unit tests: idempotent seeding, done-plus-record in one transaction, attempt counting, and reopening the file keeps everything.
    - `SqliteCacheStorage`: store/retrieve round trip; POST bodies keyed separately; an exception mid-store leaves no entry.
@@ -278,16 +228,8 @@ Every layer except 7 and 8 runs offline in CI.
    - **Hard kill:** the same, but with `proc.kill()` after 50 items. The same assertions hold, except that the server may see at most one ID twice.
    - **Truncated cache entry:** plant a truncated body for one ID. The rerun detects it, refetches it, and the record comes out complete.
    - **Blocked:** the server returns 429 at ID 30, and the spider closes with `blocked`. Once the server recovers, a rerun completes the crawl.
-6. **Settings contract test.** Asserts:
-   - `DOWNLOAD_DELAY >= 5` and `RANDOMIZE_DOWNLOAD_DELAY is False`
-   - `CONCURRENT_REQUESTS_PER_DOMAIN == 1` and `ROBOTSTXT_OBEY`
-   - the contact address is in the UA
-   - 403 and 429 are absent from the retry codes
-   - `HTTPCACHE_STORAGE` is the SQLite storage, and `JOBDIR` is unset
-
-   Loosening politeness then has to be a deliberate, visible change. Scrapy contracts (`scrapy check`) are not used, because they make live requests.
 7. **Live smoke and resume check** (manual; the only tests that touch the network).
-   - Run `uv run scrapy crawl captures -s CLOSESPIDER_PAGECOUNT=25`. It passes if items validate, no `blocked` close occurs and the unknown-section stats are zero.
+   - Run `just threedecks-smoke` (`scripts/smoke.py`: the captures spider, closed after 25 responses). It passes if items validate, no `blocked` close occurs, no page fails to fetch, parse or pass the completeness check, and the unknown-section stats are zero. Unknown labels are listed but do not fail it. The pages go into the normal cache, so a rerun replays them without touching the site.
    - Then start Tier A, press Ctrl+C after about 10 pages and rerun. The rerun must skip or cache-hit those pages and continue from the next one.
 8. **Post-crawl QA** (`scripts/qa_report.py`), run after each tier:
    - counts per nation, and the share of records with a Launched date
@@ -303,17 +245,16 @@ CI (GitHub Actions) runs `ruff check` and `pytest -m "not real_pages"`.
 
 | Phase | Work | Exit criteria |
 |---|---|---|
-| 0 | Permission obtained for the full catalogue at 5 s per request (reported 2026-10-02). Remaining: file the reply email outside git, and add `data/` and `tests/fixtures/real/` to `.gitignore`. | `.gitignore` updated. |
+| 0 | Add `data/` and `tests/fixtures/real/` to `.gitignore`. | `.gitignore` updated. |
 | 1 | `uv init`; add deps; `scrapy startproject`. Write `fetch_fixtures.py` and fetch: 2682, 2744, 6358; captures ES→GB; search results pages 1 and 2 for Spain; one ID missing from the sitemap (to learn the not-found signature); one ship with alternate names; one pre-1752 British ship with Julian dates; one wrecked and one burnt ship; one ship with 3 or more incarnations. Write the synthetic fixtures. | Fixtures on disk. Open questions in section 8 marked answered. |
 | 2 | TDD the parsers: dates → grid helpers → captures → ship page → search. | Layers 1–3 green. |
-| 3 | Spiders, `StateStore`, `SqliteCacheStorage`, pipelines, middlewares, settings, and the status, reparse and export scripts. | Layers 4–6 green; layer 7 passes. |
+| 3 | Spiders, `StateStore`, `SqliteCacheStorage`, pipelines, middlewares, settings, and the status, reparse and export scripts. | Layers 4–5 green; layer 7 passes. |
 | 4 | Tier A. | About 900 records; QA report reviewed; parser fixes replayed with `reparse.py`. |
-| 5 | Tier C, in as many sessions as convenient (Tier B first, if Spanish records are needed early). Optionally, send the owner the QA discrepancies (missing captures, mismatched dates) as thanks. | Every frontier row is `done`, `not_found`, or `error` after 3 attempts; error list reviewed; QA report. |
+| 5 | Tier C, in as many sessions as convenient (Tier B first, if Spanish records are needed early). | Every frontier row is `done`, `not_found`, or `error` after 3 attempts; error list reviewed; QA report. |
 | 6 | Export and hand off to the loss-event build. | JSONL and Parquet written; QA report attached. |
 
 ## 8. Open questions and risks
 
-- **Scope:** permission covers the full ship catalogue at 5 s per request. If permission is narrowed or withdrawn, follow rule 9 in section 2.3.
 - **Long run:** about 2.5 days of continuous crawling. Interruptions are handled by the resume design (4.3), and `crawl_status.py` gives an ETA.
 - **Disk:** the cache will hold about 31,000 to 33,000 pages at 7 to 13 KB compressed, roughly 300 to 400 MB.
 - **Unverified mechanics** to settle in Phase 1:
@@ -322,25 +263,6 @@ CI (GitHub Actions) runs `ruff check` and `pytest -m "not real_pages"`.
   - whether `limit` above 50 is honoured (a larger page cuts the number of requests)
   - where alternate names appear in the markup
   - **Answered 2026-10-02 (Phase 1 fixtures):** a missing ID returns the "Find a ship" page; search results are `table#shiplists` with a `tr.shiplistdetailrow` per ship and a "N Records Found / Page X of Y" header; `limit=50` gives 50 rows per page; renamed vessels link both names in the Name cell, and the first link is the row's id. See section 3.1.
-- **Cloudflare** may start challenging automated clients. The policy is to stop and ask the owner, never to evade.
+- **Cloudflare** may start challenging automated clients.
 - **Markup drift:** the golden tests, the unknown-label and unknown-section stats, and the replay-from-cache workflow catch it cheaply.
 - **Source disagreement** (3.4) is preserved as raw data and resolved downstream, with the Three Decks source codes kept per value.
-
-## Appendix A: original permission request
-
-This is the original request. The owner later extended the scope to the full ship catalogue, on condition of a slow rate (reported 2026-10-02). Section 2.1 records the current terms. The promises below (identification, attribution, no republishing, no AI training) still apply, as rules 2 to 4.
-
-> Subject: Request to extract Spanish ship records from Three Decks for a research map
->
-> Dear Cy Harrison,
->
-> I'm building a non-commercial historical map of Spanish naval losses to Britain in the Age of Sail. Three Decks is by far the best record of these events, and I'd like to ask your permission before collecting any of it automatically.
->
-> What I'd like to do: read the ship pages for Spanish-flagged ships and their British captors (roughly 1,000 pages to start, possibly all Spanish ships later), plus your Captures list. The crawler would make one request every 5 seconds or slower, obey robots.txt, identify itself with a contact address, and fetch each page only once.
->
-> How the data would be used: the dates, places and captors would be geocoded for the map, with attribution to Three Decks and to the sources each value cites. I wouldn't republish your pages, and none of it would be used for AI training.
->
-> Would this be acceptable? If you'd prefer a different scope or rate, or if you could share an export instead, I'd be very happy to work that way.
->
-> With thanks,
-> [name, contact]
