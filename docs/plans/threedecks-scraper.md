@@ -105,27 +105,33 @@ scrapers/threedecks/
   threedecks/
     settings.py
     items.py                       # dataclass items (Scrapy supports them natively)
+    pages.py                       # PageKind registry: one entry per entity page type
+    forms.py                       # form payloads shared by spiders and fetch_fixtures
+    kinds_actions.py               # registers the 'action' PageKind
     state.py                       # StateStore: frontier, per-page status and records in SQLite (4.3)
     cache.py                       # SqliteCacheStorage: crash-safe HTTP cache (4.3)
     parsing/                       # PURE functions: (html|Selector, url) -> dataclasses. No Scrapy imports.
       dates.py                     # TDDate parser for both formats + tooltip
+      common.py                    # shared visible-text/link/footer helpers
       grid.py                      # span_rows(section) -> list[list[node]]; section_by_heading()
       ship_page.py                 # parse_ship(selector, url) -> ShipRecord
+      actions.py                   # parse_action_index / parse_action -> action items
       captures.py                  # parse_captures(selector, query) -> list[CaptureRow]
       search.py                    # parse_search(selector) -> (ship_ids, has_next)
     spiders/
-      base.py                      # ShipPageMixin: parse_ship callback, incarnation following, seeding via StateStore
+      base.py                      # TDSpider: kind-agnostic entity callback, incarnation following, seeding
       captures.py                  # Tier A
       ships_by_nation.py           # Tier B (optional)
       ships_all.py                 # Tier C: every ship ID
+      actions.py                   # the actions crawler (index + action pages)
     pipelines.py                   # Validation -> StatePipeline (upsert record + mark page done, one transaction)
     middlewares.py                 # BlockDetectionMiddleware
 scripts/
   fetch_fixtures.py                # polite fetch of the fixture list into tests/fixtures/real/
-  crawl_status.py                  # done / pending / not found / errors, pages per hour, ETA
+  crawl_status.py                  # done / pending / not found / errors, pages per hour, ETA (ships and actions)
   reparse.py                       # re-run the parsers over the cache, offline
-  export.py                        # state.sqlite -> ships.jsonl, captures.jsonl, Parquet
-  qa_report.py                     # post-crawl data quality report
+  export.py                        # state.sqlite -> ships/actions JSONL, captures JSONL, Parquet
+  qa_report.py                     # post-crawl data quality report (ships and actions)
 tests/
   fixtures/synthetic/              # hand-written minimal HTML reproducing each quirk (committed)
   fixtures/real/                   # gitignored; populated by fetch_fixtures.py
