@@ -177,3 +177,87 @@ class SearchPage:
     pages: int | None = None
     total: int | None = None
     has_next: bool = False
+
+
+# --- actions (Three Decks actions plan, 4.1) --------------------------------
+
+
+@dataclass
+class ActionIndexRow:
+    """One row of the action index (``select_action``)."""
+
+    battle_id: int | None
+    name: str
+    date: TDDate | None = None
+    end_date: TDDate | None = None
+    action_type: str | None = None  # only the index carries the type
+    war_id: int | None = None
+    war_text: str | None = None
+    cells: list[str] = field(default_factory=list)  # lossless row text
+    page: int | None = None
+
+
+@dataclass
+class ActionIndexPage:
+    rows: list[ActionIndexRow] = field(default_factory=list)
+    page: int | None = None
+    pages: int | None = None
+    total: int | None = None
+
+
+@dataclass
+class ActionSide:
+    label: str
+    nation_ids: list[int] = field(default_factory=list)
+    commander_ids: list[int] = field(default_factory=list)
+    links: list[LinkRef] = field(default_factory=list)  # hover-card lines in LinkRef.tooltip
+
+
+@dataclass
+class ActionDivision:
+    side_index: int | None = None
+    label: str = ""
+    commander_ids: list[int] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # tr.action_div_notes paragraphs
+    links: list[LinkRef] = field(default_factory=list)
+
+
+@dataclass
+class Participant:
+    side_index: int | None = None
+    division_index: int | None = None
+    td_id: int | None = None  # None when the row names a ship without a link
+    ship_label: str = ""
+    ship: LinkRef | None = None
+    commander_ids: list[int] = field(default_factory=list)
+    commander_text: str | None = None
+    commanders: list[LinkRef] = field(default_factory=list)
+    notes: str = ""
+    flags: list[str] = field(default_factory=list)  # <strong> texts in notes
+
+
+@dataclass
+class ActionRecord:
+    battle_id: int | None = None
+    name: str = ""
+    header_text: str = ""
+    date: TDDate | None = None
+    end_date: TDDate | None = None
+    war_id: int | None = None
+    war_text: str | None = None
+    places: list[LinkRef] = field(default_factory=list)  # "Fought at" show_shipyard links
+    previous_battle_id: int | None = None
+    next_battle_id: int | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    sides: list[ActionSide] = field(default_factory=list)
+    divisions: list[ActionDivision] = field(default_factory=list)
+    participants: list[Participant] = field(default_factory=list)
+    notes: str | None = None
+    sources: list[SourceRef] = field(default_factory=list)
+    unknown_rows: list[str] = field(default_factory=list)
+    unknown_sections: list[str] = field(default_factory=list)
+    url: str = ""
+    fetched_at: str = ""
+    content_sha256: str = ""
+    parser_version: str = ""
