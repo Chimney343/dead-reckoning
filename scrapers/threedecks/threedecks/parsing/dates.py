@@ -130,6 +130,90 @@ def parse_td_date(raw: str, tooltip: str | None = None) -> TDDate:
     return result
 
 
+# --- long-form dates in action headers (Task A1) ---------------------------
+#
+# An action header writes the date out in full: "21st October 1805", or a range
+# "22nd May 1563 (1563/05/31 NS) - 31st July 1563 (1563/08/09 NS)". The Julian
+# alternate is given in a trailing "(YYYY/MM/DD NS)" parenthetical.
+
+_MONTH_NAMES = "|".join(_MONTHS)
+_LONG_DAY = re.compile(
+    rf"(\d{{1,2}})\s*(?:st|nd|rd|th)?\s+(?:of\s+)?({_MONTH_NAMES})\s+(\d{{4}})",
+    re.IGNORECASE,
+)
+_LONG_MONTH = re.compile(rf"({_MONTH_NAMES})\s+(\d{{4}})", re.IGNORECASE)
+_LONG_YEAR = re.compile(r"(\d{4})")
+_LONG_WEEKDAY = re.compile(
+    r"^(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+", re.IGNORECASE
+)
+_NS_PAREN = re.compile(r"\(\s*(\d{4})/(\d{1,2})/(\d{1,2})\s+NS\s*\)")
+
+
+def _ws(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _split_long_date(text: str) -> tuple[str, str | None] | None:
+    """Split on ``" - "`` at the top parenthesis level; None for empty text."""
+    text = _ws(text)
+    if not text:
+        return None
+    depth = 0
+    for i, char in enumerate(text):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif depth == 0 and text.startswith(" - ", i):
+            return text[:i], text[i + 3 :]
+    return text, None
+
+
+def _parse_long_part(part: str) -> TDDate:
+    part = _ws(part)
+    result = TDDate(raw=part)
+    ns = _NS_PAREN.search(part)
+    if ns:
+        result.gregorian_iso = f"{int(ns[1]):04d}-{int(ns[2]):02d}-{int(ns[3]):02d}"
+    work = _LONG_WEEKDAY.sub("", _NS_PAREN.sub("", part).strip())
+
+    if (m := _LONG_DAY.search(work)) is not None:
+        day, month = int(m[1]), _MONTHS[m[2].lower()]
+        if 1 <= day <= 31:
+            result.iso = f"{int(m[3]):04d}-{month:02d}-{day:02d}"
+            result.precision = "day"
+        return result
+
+    if (m := _LONG_MONTH.search(work)) is not None:
+        month = _MONTHS[m[1].lower()]
+        result.iso = f"{int(m[2]):04d}-{month:02d}"
+        result.precision = "month"
+        return result
+
+    if (m := _LONG_YEAR.search(work)) is not None:
+        result.iso = m[1]
+        result.precision = "year"
+        return result
+
+    return result
+
+
+def parse_long_date(text: str) -> tuple[TDDate | None, TDDate | None]:
+    """Parse a written-out action date (and optional range) into TDDates.
+
+    Returns ``(start, end)``; ``end`` is None for a single date and both are None
+    for empty text. An unparseable part is kept as ``TDDate(raw=part)`` with no
+    precision, so nothing is ever silently dropped.
+    """
+    split = _split_long_date(text)
+    if split is None:
+        return None, None
+    start_text, end_text = split
+    start = _parse_long_part(start_text)
+    end = _parse_long_part(end_text) if end_text else None
+    return start, end
+
+
 _FEET_INCHES = re.compile(r"^\s*([\d,]+)'\s*(?:([\d.]+)\s*\"?)?")
 _PLAIN_NUMBER = re.compile(r"^\s*([\d,]+(?:\.\d+)?)\s*$")
 _GUNS = re.compile(r"^\s*(\d+)\s+([^\d\s]+)\s+(\d+)-([A-Za-zÀ-ÿ]+)")

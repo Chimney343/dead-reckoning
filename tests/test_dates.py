@@ -7,7 +7,12 @@ absent or malformed.
 from __future__ import annotations
 
 import pytest
-from threedecks.parsing.dates import parse_dimension, parse_guns, parse_td_date
+from threedecks.parsing.dates import (
+    parse_dimension,
+    parse_guns,
+    parse_long_date,
+    parse_td_date,
+)
 
 # --- D.M.YYYY and partial forms (ship pages) ------------------------------
 
@@ -165,3 +170,54 @@ def test_julian_alternate_year_of_any_width(raw, alt):
     d = parse_td_date(raw)
     assert d.julian_alt_year == alt
     assert d.precision in ("day", "month")
+
+
+# --- long-form dates in action headers (Task A1) ----------------------------
+
+
+def test_long_date_full_day():
+    start, end = parse_long_date("21st October 1805")
+    assert end is None
+    assert (start.iso, start.precision) == ("1805-10-21", "day")
+
+
+def test_long_date_space_before_suffix():
+    # The header renders 21<sup>st</sup>, i.e. "21 st October 1805".
+    start, _ = parse_long_date("21 st October 1805")
+    assert (start.iso, start.precision) == ("1805-10-21", "day")
+
+
+def test_long_date_day_with_weekday_and_of():
+    start, _ = parse_long_date("Tuesday 14th of August 1798")
+    assert (start.iso, start.precision) == ("1798-08-14", "day")
+
+
+def test_long_date_range_with_gregorian_annotations():
+    start, end = parse_long_date(
+        "22nd May 1563 (1563/05/31 NS) - 31st July 1563 (1563/08/09 NS)"
+    )
+    assert (start.iso, start.precision, start.gregorian_iso) == (
+        "1563-05-22",
+        "day",
+        "1563-05-31",
+    )
+    assert (end.iso, end.precision, end.gregorian_iso) == (
+        "1563-07-31",
+        "day",
+        "1563-08-09",
+    )
+
+
+def test_long_date_month_and_year_precision():
+    month, _ = parse_long_date("May 1576")
+    assert (month.iso, month.precision) == ("1576-05", "month")
+    year, _ = parse_long_date("1801")
+    assert (year.iso, year.precision) == ("1801", "year")
+
+
+def test_long_date_empty_and_unparseable():
+    assert parse_long_date("") == (None, None)
+    start, end = parse_long_date("sometime")
+    assert start.raw == "sometime"
+    assert start.precision is None
+    assert end is None
