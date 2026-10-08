@@ -54,6 +54,84 @@ def ship_fixtures(ids: list[int]) -> list[Fixture]:
     ]
 
 
+def action_fixtures(ids: list[int]) -> list[Fixture]:
+    return [
+        Fixture(
+            name=f"action_{i}",
+            filename=f"action_{i}.html",
+            url=f"{BASE_URL}/index.php?display_type=show_battle&id={i}",
+        )
+        for i in ids
+    ]
+
+
+def fleet_fixtures(ids: list[int]) -> list[Fixture]:
+    return [
+        Fixture(
+            name=f"fleet_{i}",
+            filename=f"fleet_{i}.html",
+            url=f"{BASE_URL}/index.php?display_type=show_fleet&id={i}",
+        )
+        for i in ids
+    ]
+
+
+def action_index_form(page: int) -> dict:
+    """The ``action_selector`` form as its "Next" button submits it: no filters."""
+    return {
+        "formid": "action_selector",
+        "page": str(page),
+        "limit": "50",
+        "battle_name": "",
+        "type": "0",
+        "war": "0",
+        "date": "",
+        "date_yy": "0000",
+        "date_mm": "00",
+        "date_dd": "00",
+    }
+
+
+def actions_fleets_fixtures() -> list[Fixture]:
+    """Recon fixtures for the actions and fleets crawlers (their plans in docs/plans/).
+
+    157 Trafalgar (map coordinates, divisions), 149 2nd Cape St Vincent (no map),
+    532 a single-ship action, 988 a siege; fleet 97 British, 139 Spanish.
+    """
+    fixtures = action_fixtures([157, 149, 532, 988])
+    fixtures += fleet_fixtures([97, 139])
+    fixtures += [
+        Fixture(
+            name="action_notfound_probe",
+            filename="action_notfound_probe.html",
+            url=f"{BASE_URL}/index.php?display_type=show_battle&id=999999",
+        ),
+        Fixture(
+            name="action_index",
+            filename="action_index.html",
+            url=f"{BASE_URL}/index.php?display_type=select_action",
+        ),
+        Fixture(
+            name="action_index_p2",
+            filename="action_index_p2.html",
+            method="POST",
+            url=f"{BASE_URL}/index.php?display_type=select_action",
+            data=action_index_form(2),
+        ),
+        Fixture(
+            name="fleetlist_index",
+            filename="fleetlist_index.html",
+            url=f"{BASE_URL}/index.php?display_type=show_fleetlist",
+        ),
+        Fixture(
+            name="fleet_notfound_probe",
+            filename="fleet_notfound_probe.html",
+            url=f"{BASE_URL}/index.php?display_type=show_fleet&id=999999",
+        ),
+    ]
+    return fixtures
+
+
 def default_fixtures() -> list[Fixture]:
     fixtures = ship_fixtures([2682, 2744, 6358])
     fixtures += [
@@ -99,6 +177,7 @@ def default_fixtures() -> list[Fixture]:
             },
         ),
     ]
+    fixtures += actions_fleets_fixtures()
     return fixtures
 
 

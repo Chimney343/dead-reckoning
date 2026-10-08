@@ -1,6 +1,6 @@
 # Three Decks ship scraper: implementation and test plan
 
-Status: draft, 2026-10-02. The site owner approved a full crawl of the ship catalogue at the robots.txt rate of one request every 5 s. At that rate the crawl takes about 2.5 days, so it must survive being cancelled or crashing (section 4.3).
+Status: draft, 2026-10-02; scope extended 2026-10-08. The site owner approved a full crawl of the ship catalogue at the robots.txt rate of one request every 5 s. At that rate the crawl takes about 2.5 days, so it must survive being cancelled or crashing (section 4.3). On 2026-10-08 he extended the scope to actions (battle pages) and fleet lists. Each has its own crawler and plan: [threedecks-actions.md](threedecks-actions.md) and [threedecks-fleets.md](threedecks-fleets.md).
 
 ## 1. Purpose and scope
 
@@ -8,7 +8,9 @@ Status: draft, 2026-10-02. The site owner approved a full crawl of the ship cata
 
 The scraper collects **ships and ship metadata**: one record per Three Decks ship ID, holding the base facts, dimensions, armament, complement, commanders, service-history events and cited sources. It also collects the site's **captures index**, a ready list of "ship X taken by ship Y".
 
-Out of scope: officer, battle, place and class pages, which are kept only as linked IDs; geocoding; and deriving the loss-event table. Those are downstream steps that consume this scraper's output. The Three Decks ship ID is Wikidata property P11085, so the output joins directly to Wikidata.
+Out of scope: officer, place and class pages, which are kept only as linked IDs; geocoding; and deriving the loss-event table. Those are downstream steps that consume this scraper's output. The Three Decks ship ID is Wikidata property P11085, so the output joins directly to Wikidata.
+
+Battle (action) pages and fleet lists have been in scope since 2026-10-08. They're crawled by two separate crawlers, each with its own plan: [threedecks-actions.md](threedecks-actions.md) and [threedecks-fleets.md](threedecks-fleets.md). This ship scraper never fetches them.
 
 ## 2. Permission and conduct
 
@@ -16,7 +18,8 @@ Out of scope: officer, battle, place and class pages, which are kept only as lin
 
 - **Granted by:** Cy Harrison, owner of Three Decks. Reported 2026-10-02. Keep the reply email on file outside git.
 - **Scope:** the full ship catalogue (about 31,000 ship pages), plus the Captures list and the ship search pages used to seed it. This goes beyond the original request in Appendix A.
-- **Condition:** a slow rate. This is implemented as the robots.txt `Crawl-delay` of 5 s between requests, one request at a time.
+- **Extension (reported 2026-10-08):** the Actions index and action pages (`show_battle`), and the Fleet Lists index and fleet-list pages. The request is Appendix B. Place pages are not included. Keep this reply on file outside git as well.
+- **Condition:** a slow rate. This is implemented as the robots.txt `Crawl-delay` of 5 s between requests, one request at a time. It applies to the extension too.
 
 ### 2.2 Site context that still applies
 
@@ -34,9 +37,10 @@ Rules 1 to 4 are the owner's condition and the promises made in the request; tre
 4. **No AI-training use** of the scraped pages or data.
 5. **No evasion.** This overrides the generic Scrapy advice on rotating User-Agents and proxies: there is no UA rotation, no proxies and no Cloudflare-challenge solving. Permission does not change this. A 403, a 429 or a challenge page means something is wrong, so stop the spider and contact the owner rather than work around it.
 6. **Fetch each page once.** The persistent HTTP cache is the source of truth. Re-parsing and resuming never re-fetch.
-7. **Stay on ship data.** Fetch only ship pages, the Captures list and ship search results. Officer, battle, place and class pages are out of scope; keep only their IDs.
+7. **Stay on ship, action and fleet-list data.** Fetch only ship pages, the Captures list, ship search results, the action index and action (battle) pages, and the fleet-list index and fleet-list pages. Officer, place, class, shipyard and source pages are out of scope; keep only their IDs. (Amended 2026-10-08, when battle pages and fleet lists came into scope.)
 8. **Nothing scraped goes into git.** The repo has a GitHub remote, so treat it as public. Keep `data/` and `tests/fixtures/real/` in `.gitignore`. Every record carries provenance.
 9. **If permission is narrowed or withdrawn,** stop at once, then delete the HTTP cache and any scraped data outside the new scope.
+10. **One crawler at a time.** Scrapy's `DOWNLOAD_DELAY` applies per process, so two spiders running together would send two requests every 5 s and break rule 1. Every spider, and `fetch_fixtures.py`, takes an exclusive lock on `data/threedecks/crawl.lock`. (Added 2026-10-08; built as task S2 of [threedecks-actions.md](threedecks-actions.md) and [threedecks-fleets.md](threedecks-fleets.md).)
 
 ## 3. Recon findings (2026-10-02)
 
@@ -313,7 +317,7 @@ CI (GitHub Actions) runs `ruff check` and `pytest -m "not real_pages"`.
 
 ## 8. Open questions and risks
 
-- **Scope:** permission covers the full ship catalogue at 5 s per request. If permission is narrowed or withdrawn, follow rule 9 in section 2.3.
+- **Scope:** permission covers the full ship catalogue, action pages and fleet lists (since 2026-10-08), all at 5 s per request. If permission is narrowed or withdrawn, follow rule 9 in section 2.3.
 - **Long run:** about 2.5 days of continuous crawling. Interruptions are handled by the resume design (4.3), and `crawl_status.py` gives an ETA.
 - **Disk:** the cache will hold about 31,000 to 33,000 pages at 7 to 13 KB compressed, roughly 300 to 400 MB.
 - **Unverified mechanics** to settle in Phase 1:
@@ -341,6 +345,25 @@ This is the original request. The owner later extended the scope to the full shi
 > How the data would be used: the dates, places and captors would be geocoded for the map, with attribution to Three Decks and to the sources each value cites. I wouldn't republish your pages, and none of it would be used for AI training.
 >
 > Would this be acceptable? If you'd prefer a different scope or rate, or if you could share an export instead, I'd be very happy to work that way.
+>
+> With thanks,
+> [name, contact]
+
+## Appendix B: scope-extension request (sent; granted 2026-10-08)
+
+The owner granted actions and fleet lists with no further conditions. Place pages, the optional paragraph, were not granted.
+
+> Subject: Three Decks: request to extend the ship crawl to actions and fleet lists
+>
+> Dear Cy Harrison,
+>
+> Thank you again for permitting the ship-catalogue crawl. It runs exactly as agreed: one request every 5 seconds, one at a time, identified by its User-Agent, and each page fetched only once.
+>
+> I'd like to ask whether you'd allow the same crawler to read two more parts of the site: the Actions list and its action pages (`show_battle`), and the Fleet Lists and their pages. For the map of Spanish naval losses, the action pages give the place and the opposing forces behind each loss, which the ship pages alone don't. I'll confirm the page counts before starting, and the rate and conditions would stay the same.
+>
+> [Optional: If the action pages locate actions by place, I'd also like to ask about the place pages, for their coordinates only.]
+>
+> The earlier promises stand: attribution to Three Decks and to the sources each value cites, no republishing of your pages, and no use for AI training. If you'd prefer a narrower scope, a slower rate, or an export, I'll gladly work that way.
 >
 > With thanks,
 > [name, contact]

@@ -233,3 +233,6 @@ data/raw/_inventory.csv
 # The GitHub remote is public, so no scraped content is ever committed (rule 8).
 data/threedecks/
 tests/fixtures/real/
+
+# Local tooling caches (machine-specific)
+.repowise/
