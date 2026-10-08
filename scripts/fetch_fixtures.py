@@ -25,6 +25,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
+from threedecks.lock import CrawlLock, CrawlLockHeld
+from threedecks.settings import DATA_DIR
 from threedecks.ua import MISSING_CONTACT_HELP, build_user_agent, contact
 
 BASE_URL = "https://threedecks.org"
@@ -237,13 +239,21 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     headers = {"User-Agent": build_user_agent()}
-    with httpx.Client(timeout=60.0, follow_redirects=True, headers=headers) as client:
-        for i, fixture in enumerate(pending):
-            if i:
-                time.sleep(DELAY_SECONDS)
-            record = fetch(client, fixture)
-            index[fixture.name] = record
-            print(f"{fixture.name}: {record['status']} {record['bytes']} bytes")
+    try:
+        # Rule 10: one crawl at a time. These pages cost real requests, so the
+        # fixture fetcher shares the crawl lock with scripts/crawl.py.
+        with CrawlLock(Path(DATA_DIR) / "crawl.lock"):
+            with httpx.Client(timeout=60.0, follow_redirects=True, headers=headers) as client:
+                for i, fixture in enumerate(pending):
+                    if i:
+                        time.sleep(DELAY_SECONDS)
+                    record = fetch(client, fixture)
+                    index[fixture.name] = record
+                    print(f"{fixture.name}: {record['status']} {record['bytes']} bytes")
+    except CrawlLockHeld as held:
+        print(f"error: another crawl holds {DATA_DIR} (pid {held.pid}, started "
+              f"{held.started}); its log and heartbeat live there", file=sys.stderr)
+        return 2
     save_index(index)
     print(f"wrote {len(pending)} fixture(s) to {FIXTURE_DIR}")
     return 0

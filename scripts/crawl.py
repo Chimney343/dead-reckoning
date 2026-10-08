@@ -51,6 +51,10 @@ from threedecks.ua import MISSING_CONTACT_HELP, contact
 
 SCRAPY_DIR = Path(__file__).resolve().parents[1] / "scrapers" / "threedecks"
 TIERS = ("captures", "ships_by_nation", "ships_all")
+# Non-ship crawlers (actions, fleets) run under this driver too, for the lock,
+# watchdog and logs, but are opt-in: each Part B plan appends its spider's name.
+# The default stays TIERS, so crawl_all.py and a bare crawl.py never run them.
+EXTRA_TIERS: tuple[str, ...] = ()
 
 WATCH_SECS = 30  # how often the watchdog looks at the heartbeat
 SUSPEND_GAP_SECS = 120  # a longer gap between looks means the PC was asleep
@@ -338,17 +342,27 @@ def pages_today(data_dir: Path, day_start: str, now: float | None = None) -> int
     return int(row[0])
 
 
-def run_tier(spider: str, target: int, overrides: dict[str, str], data_dir: Path, log: Log,
-             stall_secs: float = STALL_SECS, watch_secs: float = WATCH_SECS,
-             daily_pages: int = 0, stop_at: float = 0.0) -> TierResult:
-    """Run one ``scrapy crawl`` under the watchdog."""
-    token = uuid.uuid4().hex
+def tier_command(
+    spider: str,
+    target: int | None,
+    overrides: dict[str, str],
+    *,
+    token: str | None = None,
+    daily_pages: int = 0,
+    stop_at: float = 0.0,
+) -> list[str]:
+    """The ``scrapy crawl`` argv for one tier.
+
+    ``target`` is the ship target. Ship tiers always carry it; an extra tier
+    (actions, fleets) passes ``None`` and gets no ``THREEDECKS_SHIP_TARGET``.
+    """
     command = [
         sys.executable, "-m", "scrapy", "crawl", spider,
         "-s", "LOG_LEVEL=INFO",
-        "-s", f"THREEDECKS_SHIP_TARGET={target}",
-        "-s", f"THREEDECKS_RUN_TOKEN={token}",
     ]
+    if target is not None:
+        command += ["-s", f"THREEDECKS_SHIP_TARGET={target}"]
+    command += ["-s", f"THREEDECKS_RUN_TOKEN={token or uuid.uuid4().hex}"]
     # The budget and the window are set here, not through user -s overrides:
     # they are per-tier instructions, not politeness settings to inspect.
     if daily_pages > 0:
@@ -357,6 +371,18 @@ def run_tier(spider: str, target: int, overrides: dict[str, str], data_dir: Path
         command += ["-s", f"THREEDECKS_STOP_AT={stop_at}"]
     for key, value in overrides.items():
         command += ["-s", f"{key}={value}"]
+    return command
+
+
+def run_tier(spider: str, target: int | None, overrides: dict[str, str], data_dir: Path,
+             log: Log, stall_secs: float = STALL_SECS, watch_secs: float = WATCH_SECS,
+             daily_pages: int = 0, stop_at: float = 0.0) -> TierResult:
+    """Run one ``scrapy crawl`` under the watchdog."""
+    token = uuid.uuid4().hex
+    command = tier_command(
+        spider, target, overrides,
+        token=token, daily_pages=daily_pages, stop_at=stop_at,
+    )
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     process = subprocess.Popen(
         command, cwd=SCRAPY_DIR, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -453,9 +479,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     tiers = [tier.strip() for tier in args.tiers.split(",") if tier.strip()]
-    unknown = sorted(set(tiers) - set(TIERS))
+    unknown = sorted(set(tiers) - set(TIERS) - set(EXTRA_TIERS))
     if unknown:
-        parser.error(f"unknown tier(s) {', '.join(unknown)}; choose from {', '.join(TIERS)}")
+        parser.error(
+            f"unknown tier(s) {', '.join(unknown)}; "
+            f"choose from {', '.join(TIERS + EXTRA_TIERS)}"
+        )
     network_waits = [float(m) for m in args.network_waits.split(",") if m.strip()]
     window = None
     try:
@@ -509,7 +538,8 @@ def crawl(args, tiers, network_waits, overrides, data_dir: Path, log: Log, windo
         if awake:
             log.say("keeping the PC awake until the crawl ends (the screen stays on)")
         for spider in tiers:
-            if ship_count(data_dir) >= args.ships:
+            is_ship_tier = spider in TIERS
+            if is_ship_tier and ship_count(data_dir) >= args.ships:
                 verdict = f"target of {args.ships} reached"
                 break
             finished_at = tier_finished(data_dir, spider)
@@ -545,7 +575,8 @@ def crawl(args, tiers, network_waits, overrides, data_dir: Path, log: Log, windo
                     result = TierResult(code=None, interrupted=True)
                     break
                 log.say(f"=== {spider} ===")
-                result = run_tier(spider, args.ships, overrides, data_dir, log,
+                result = run_tier(spider, args.ships if is_ship_tier else None,
+                                  overrides, data_dir, log,
                                   stall_secs=args.stall_minutes * 60,
                                   watch_secs=args.watch_seconds,
                                   daily_pages=remaining,
@@ -607,6 +638,9 @@ def crawl(args, tiers, network_waits, overrides, data_dir: Path, log: Log, windo
                 break
             if reason == "network_down":
                 status, verdict = 1, "the network stayed down through every retry; rerun later"
+                break
+            if reason == "closespider_pagecount":  # a smoke run's page cap, not a failure
+                verdict = f"page cap reached during {spider}"
                 break
             if reason != "finished":
                 status, verdict = 1, f"{spider} closed with reason {reason!r}; stopping"

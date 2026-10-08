@@ -6,6 +6,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 
 import pytest
 from resume_harness import REPO_ROOT, FakeSite, crawl_env
@@ -64,6 +65,88 @@ def test_refuses_to_loosen_the_rate_against_the_site(monkeypatch, capsys):
 def test_rejects_an_unknown_tier():
     with pytest.raises(SystemExit):
         crawl.main(["--tiers", "captures,officers"])
+
+
+# --- extra tiers (actions, fleets): shared driver, separate settings -------------
+
+
+def _fake_args(**overrides):
+    values = dict(
+        ships=50, more=None, allow_sleep=True, daily_pages=0,
+        day_start="00:00", rerun=False, pause_seconds=0.0,
+        stall_minutes=crawl.STALL_SECS / 60, watch_seconds=crawl.WATCH_SECS,
+    )
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def test_extra_tier_is_accepted_and_the_default_is_unchanged(monkeypatch, tmp_path):
+    monkeypatch.setattr(crawl, "EXTRA_TIERS", ("dummy",))
+    monkeypatch.setenv("THREEDECKS_CONTACT", "test@example.org")
+    monkeypatch.setattr(crawl, "THREEDECKS_BASE_URL", "http://127.0.0.1:9")
+    monkeypatch.setattr(crawl, "DATA_DIR", tmp_path)
+    seen = {}
+
+    def fake_crawl(args, tiers, *rest, **kwargs):
+        seen["tiers"] = tiers
+        return 0
+
+    monkeypatch.setattr(crawl, "crawl", fake_crawl)
+
+    assert crawl.main(["--tiers", "dummy"]) == 0
+    assert seen["tiers"] == ["dummy"]
+    assert crawl.main([]) == 0
+    assert seen["tiers"] == list(crawl.TIERS)
+
+
+def test_an_unknown_tier_is_rejected_even_with_extra_tiers(monkeypatch):
+    monkeypatch.setattr(crawl, "EXTRA_TIERS", ("dummy",))
+    with pytest.raises(SystemExit):
+        crawl.main(["--tiers", "captures,dummy,officers"])
+
+
+def test_an_extra_tier_runs_below_any_ship_target(monkeypatch, tmp_path):
+    """An extra tier is not skipped by the ship target, and its command carries
+    no THREEDECKS_SHIP_TARGET (S1)."""
+    monkeypatch.setattr(crawl, "EXTRA_TIERS", ("dummy",))
+    commands: list[list[str]] = []
+
+    def fake_run_tier(spider, target, overrides, data_dir, log, **kwargs):
+        commands.append(crawl.tier_command(spider, target, overrides))
+        return crawl.TierResult(code=0)
+
+    monkeypatch.setattr(crawl, "run_tier", fake_run_tier)
+    monkeypatch.setattr(crawl, "tier_finished", lambda data_dir, spider: None)
+    monkeypatch.setattr(crawl, "last_run", lambda data_dir, spider: {"close_reason": "finished"})
+    monkeypatch.setattr(crawl, "ship_count", lambda data_dir: 9999)  # above the target
+
+    log = crawl.Log(tmp_path / "log.txt")
+    try:
+        assert crawl.crawl(_fake_args(ships=50), ["dummy"], [], {}, tmp_path, log) == 0
+    finally:
+        log.close()
+
+    assert len(commands) == 1
+    assert not any(arg.startswith("THREEDECKS_SHIP_TARGET=") for arg in commands[0])
+    # A ship tier still carries the target.
+    ship_command = crawl.tier_command("captures", 50, {})
+    assert any(arg == "THREEDECKS_SHIP_TARGET=50" for arg in ship_command)
+
+
+def test_a_page_cap_close_ends_the_chain_cleanly(monkeypatch, tmp_path):
+    monkeypatch.setattr(crawl, "run_tier", lambda *a, **k: crawl.TierResult(code=0))
+    monkeypatch.setattr(crawl, "tier_finished", lambda data_dir, spider: None)
+    monkeypatch.setattr(
+        crawl, "last_run", lambda data_dir, spider: {"close_reason": "closespider_pagecount"}
+    )
+    monkeypatch.setattr(crawl, "ship_count", lambda data_dir: 0)
+
+    log = crawl.Log(tmp_path / "log.txt")
+    try:
+        assert crawl.crawl(_fake_args(), ["actions"], [], {}, tmp_path, log) == 0
+    finally:
+        log.close()
+    assert "page cap reached during actions" in (tmp_path / "log.txt").read_text(encoding="utf-8")
 
 
 def test_stops_at_the_target_and_a_rerun_does_nothing(tmp_path):
