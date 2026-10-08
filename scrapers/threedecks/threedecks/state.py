@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from threedecks.items import CaptureRow, ShipRecord
+from threedecks.items import ActionIndexRow, ActionRecord, CaptureRow, ShipRecord
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS frontier (
@@ -64,6 +64,17 @@ CREATE TABLE IF NOT EXISTS page_frontier (
     PRIMARY KEY (kind, page_key)
 );
 CREATE INDEX IF NOT EXISTS page_frontier_status ON page_frontier (kind, status);
+CREATE TABLE IF NOT EXISTS actions (
+    battle_id INTEGER PRIMARY KEY,
+    record_json TEXT NOT NULL,
+    parser_version TEXT,
+    content_sha256 TEXT,
+    fetched_at TEXT
+);
+CREATE TABLE IF NOT EXISTS action_index (
+    battle_id INTEGER PRIMARY KEY,
+    row_json TEXT NOT NULL
+);
 """
 
 
@@ -412,6 +423,80 @@ class StateStore:
     def iter_captures(self):
         for row in self._conn.execute("SELECT row_json FROM captures ORDER BY key"):
             yield json.loads(row["row_json"])
+
+    # -- actions (Three Decks actions plan 4.2) ---------------------------
+    def save_action(self, record: ActionRecord) -> None:
+        """Upsert the action record and mark the page done in one transaction."""
+        if record.battle_id is None:
+            raise ValueError("cannot save an action record without a battle_id")
+        payload = json.dumps(asdict(record), ensure_ascii=False, sort_keys=True)
+        now = utcnow()
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO actions "
+                "(battle_id, record_json, parser_version, content_sha256, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(battle_id) DO UPDATE SET "
+                " record_json = excluded.record_json, "
+                " parser_version = excluded.parser_version, "
+                " content_sha256 = excluded.content_sha256, "
+                " fetched_at = excluded.fetched_at",
+                (
+                    record.battle_id,
+                    payload,
+                    record.parser_version,
+                    record.content_sha256,
+                    record.fetched_at or now,
+                ),
+            )
+            self._page_done_sql("action", str(record.battle_id), now)
+
+    def save_action_index_page(self, page_key: str, rows: list[ActionIndexRow]) -> int:
+        """Upsert the page's rows and mark the page done in one transaction.
+
+        Returns how many rows were stored (rows without a battle id are skipped).
+        """
+        now = utcnow()
+        stored = 0
+        with self._conn:
+            for row in rows:
+                if row.battle_id is None:
+                    continue
+                payload = json.dumps(asdict(row), ensure_ascii=False, sort_keys=True)
+                self._conn.execute(
+                    "INSERT INTO action_index (battle_id, row_json) VALUES (?, ?) "
+                    "ON CONFLICT(battle_id) DO UPDATE SET row_json = excluded.row_json",
+                    (row.battle_id, payload),
+                )
+                stored += 1
+            self._page_done_sql("action_index", str(page_key), now)
+        return stored
+
+    def get_action(self, battle_id: int) -> dict | None:
+        row = self._conn.execute(
+            "SELECT record_json FROM actions WHERE battle_id = ?", (battle_id,)
+        ).fetchone()
+        return json.loads(row["record_json"]) if row else None
+
+    def iter_actions(self):
+        for row in self._conn.execute("SELECT record_json FROM actions ORDER BY battle_id"):
+            yield json.loads(row["record_json"])
+
+    def iter_action_index(self):
+        for row in self._conn.execute("SELECT row_json FROM action_index ORDER BY battle_id"):
+            yield json.loads(row["row_json"])
+
+    def action_count(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) AS n FROM actions").fetchone()["n"]
+
+    def history_battle_ids(self) -> list[int]:
+        """Every battle id cited by a stored ship's history, sorted and unique."""
+        ids: set[int] = set()
+        for row in self._conn.execute("SELECT record_json FROM ships"):
+            record = json.loads(row["record_json"])
+            for event in record.get("history", []):
+                ids.update(event.get("battle_ids", []))
+        return sorted(ids)
 
     # -- runs --------------------------------------------------------------
     def close_open_runs(self) -> int:
