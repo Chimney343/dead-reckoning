@@ -25,19 +25,26 @@ from threedecks.items import (
     LinkRef,
     OfficerRow,
     ShipRecord,
-    SourceRef,
     extract_id,
 )
+from threedecks.parsing import common
 from threedecks.parsing.dates import parse_td_date
 from threedecks.parsing.grid import heading_text, section_by_heading, span_rows, strip_count
 
-_URL_KIND = re.compile(r"display_type=([a-z_]+)")
+# The shared text and link helpers, with their old private names kept as aliases
+# so nothing that grew around the ship parser breaks (Task S2).
+_norm = common.norm
+_kind = common.link_kind
+_tooltip_lines = common.tooltip_lines
+_links = common.links
+_link_ids = common.link_ids
+_node_text = common.node_text
+_int_from_text = common.int_from_text
+_parse_sources = common.parse_sources
+_NOT_TOOLTIP = common.NOT_TOOLTIP
+_VISIBLE_TEXT = common.VISIBLE_TEXT
+_VISIBLE_LINKS = common.VISIBLE_LINKS
 
-# Linked ships and crewmen carry a hover card (span.tooltiptext) inside the
-# cell; its text and links are not part of the cell's own content.
-_NOT_TOOLTIP = "not(ancestor::span[contains(@class,'tooltiptext')])"
-_VISIBLE_TEXT = f".//text()[{_NOT_TOOLTIP}]"
-_VISIBLE_LINKS = f".//a[@href][{_NOT_TOOLTIP}]"
 _LEADING_DATE = re.compile(r"^(\d{1,2}\.\d{1,2}\.\d{4}|\d{4})")
 
 # What each base-row label says about the ship. The loss-event build keys on
@@ -143,75 +150,6 @@ _OFFICER_WORDS = re.compile(
     r"(Commander|Officer|Admiral|Captain|Lieutenant|Midshipman|Marine|Warrant|Petty)",
     re.IGNORECASE,
 )
-
-
-def _norm(texts) -> str:
-    if isinstance(texts, str):
-        texts = [texts]
-    return re.sub(r"\s+", " ", " ".join(texts)).strip()
-
-
-def _kind(href: str | None) -> str | None:
-    if not href:
-        return None
-    match = _URL_KIND.search(href)
-    return match.group(1) if match else None
-
-
-def _tooltip_lines(anchor) -> list[str]:
-    """The ``<br>``-separated lines of the hover card wrapping ``anchor``."""
-    cards = anchor.xpath(
-        "./ancestor::div[contains(@class,'tooltip')][1]/span[contains(@class,'tooltiptext')]"
-    )
-    if not cards:
-        return []
-    card = cards[0].root
-    lines: list[str] = []
-    current = [card.text or ""]
-    for child in card:
-        if child.tag == "br":
-            lines.append(_norm(current))
-            current = []
-        else:
-            current.append(child.text_content())
-        current.append(child.tail or "")
-    lines.append(_norm(current))
-    return [line for line in lines if line]
-
-
-def _links(cell) -> list[LinkRef]:
-    out: list[LinkRef] = []
-    for anchor in cell.xpath(_VISIBLE_LINKS):
-        href = anchor.xpath("./@href").get()
-        out.append(
-            LinkRef(
-                text=_norm(anchor.xpath(".//text()").getall()),
-                href=href,
-                id=extract_id(href),
-                kind=_kind(href),
-                tooltip=_tooltip_lines(anchor),
-            )
-        )
-    return out
-
-
-def _link_ids(node, kind: str) -> list[int]:
-    """Ids of the visible links of exactly ``kind`` (``show_ship`` is not ``show_shipyard``)."""
-    ids = [
-        extract_id(href)
-        for href in node.xpath(f"{_VISIBLE_LINKS}/@href").getall()
-        if _kind(href) == kind
-    ]
-    return [i for i in ids if i is not None]
-
-
-def _int_from_text(text: str) -> int | None:
-    match = re.search(r"\d+", text or "")
-    return int(match.group()) if match else None
-
-
-def _node_text(node) -> str:
-    return _norm(node.xpath(_VISIBLE_TEXT).getall())
 
 
 def _row_texts(row) -> list[str]:
@@ -426,33 +364,6 @@ def _parse_fleets(root) -> list[FleetRow]:
     return fleets
 
 
-def _parse_sources(root) -> list[SourceRef]:
-    sources: list[SourceRef] = []
-    for div in root.xpath(".//div[@id='source_list']/div"):
-        code = _norm(div.xpath("./span[1]//text()").getall()) or None
-        title_link = div.xpath(".//a[contains(@href,'show_source')]")
-        title = None
-        source_id = None
-        if title_link:
-            title = _norm(title_link[0].xpath(".//text()").getall())
-            source_id = extract_id(title_link[0].xpath("./@href").get())
-        authors = [
-            _norm(a.xpath(".//text()").getall())
-            for a in div.xpath(".//a[contains(@href,'show_author')]")
-        ]
-        type_text = _norm(div.xpath("./span[last()]//text()").getall()) or None
-        sources.append(
-            SourceRef(
-                code=code,
-                title=title,
-                authors=[a for a in authors if a],
-                type=type_text,
-                source_id=source_id,
-            )
-        )
-    return sources
-
-
 def _section_text(root, name: str) -> str | None:
     nodes = section_by_heading(root, name)
     if not nodes:
@@ -658,8 +569,7 @@ def is_ship_page(selector: Selector) -> bool:
     ship's data fails the check.
     """
     return bool(
-        selector.xpath("//table[@id='ship_base']")
-        and selector.xpath("//span[@id='copywrite_message'][contains(., 'Copyright')]")
+        selector.xpath("//table[@id='ship_base']") and common.has_footer(selector)
     )
 
 
