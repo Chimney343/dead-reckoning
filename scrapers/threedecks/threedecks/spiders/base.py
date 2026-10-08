@@ -371,10 +371,10 @@ class TDSpider(scrapy.Spider):
     def _inc_entity_stat(self, kind: str, name: str) -> None:
         self._inc_stat(self._stat_key(kind, name))
 
-    def _inc_stat(self, key: str) -> None:
+    def _inc_stat(self, key: str, count: int = 1) -> None:
         stats = getattr(getattr(self, "crawler", None), "stats", None)
         if stats is not None:  # no crawler (offline tests)
-            stats.inc_value(key)
+            stats.inc_value(key, count)
 
     # -- completeness (Plan 4.3, step 6) ----------------------------------
     def _record_entity_incomplete(self, response, kind: str, key: str):
