@@ -479,3 +479,89 @@ def test_incomplete_limit_zero_disables_the_breaker(monkeypatch, tmp_path):
         list(spider.parse_ship_page(incomplete_response(td_id)))
     assert closed == []
     spider.closed("test")
+
+
+# --- the generic entity path (Task S4) ---------------------------------------
+
+
+def test_entity_requests_match_ship_requests(tmp_path):
+    a = make(ShipsAllSpider, tmp_path)
+    b = make(ShipsAllSpider, tmp_path)
+    entity = [(r.url, dict(r.meta)) for r in a.entity_requests("ship", [5], depth=0)]
+    ships = [(r.url, dict(r.meta)) for r in b.ship_requests([5], depth=0, discovered_by=None)]
+    a.closed("test")
+    b.closed("test")
+    assert entity == ships
+    assert entity[0][1] == {"depth": 0, "discovered_by": None, "kind": "ship", "key": "5",
+                            "td_id": 5}
+
+
+def test_parse_entity_page_with_the_ship_kind_matches_the_wrapper(monkeypatch, tmp_path):
+    _, spider = make_with_crawler(ShipsAllSpider, monkeypatch, tmp_path)
+
+    response = response_for(
+        "ship_full.html", SHIP_URL, meta={"depth": 0, "kind": "ship", "key": "1234"}
+    )
+    records = [p for p in spider.parse_entity_page(response) if isinstance(p, ShipRecord)]
+    assert len(records) == 1 and records[0].td_id == 1234
+
+    nf = response_for(
+        "notfound.html",
+        "https://threedecks.org/index.php?display_type=show_ship&id=999999",
+        meta={"kind": "ship", "key": "999999"},
+    )
+    assert list(spider.parse_entity_page(nf)) == []
+    assert spider.store.status(999999) == "not_found"
+    spider.closed("test")
+
+
+def test_parse_entity_page_records_a_redirect_under_the_meta_key(monkeypatch, tmp_path):
+    # A missing id 302s to the search page; response.url is then the target, but
+    # the request's key must still be used (S4 / actions plan 3.3).
+    _, spider = make_with_crawler(ShipsAllSpider, monkeypatch, tmp_path)
+    request = Request(SHIP_URL, meta={"kind": "ship", "key": "999999"})
+    response = HtmlResponse(
+        url="https://threedecks.org/index.php?display_type=ships_search",
+        body=(FIXTURES / "notfound.html").read_bytes(),
+        encoding="utf-8",
+        request=request,
+    )
+    assert list(spider.parse_entity_page(response)) == []
+    assert spider.store.status(999999) == "not_found"
+    spider.closed("test")
+
+
+def test_parse_entity_page_marks_parse_error(monkeypatch, tmp_path):
+    def broken(*args, **kwargs):
+        raise ValueError("new markup")
+
+    monkeypatch.setattr("threedecks.spiders.base.parse_ship", broken)
+    crawler, spider = make_with_crawler(ShipsAllSpider, monkeypatch, tmp_path)
+    response = response_for(
+        "ship_full.html", SHIP_URL, meta={"depth": 0, "kind": "ship", "key": "1234"}
+    )
+    assert list(spider.parse_entity_page(response)) == []
+    assert spider.store.status(1234) == "parse_error"
+    assert crawler.stats.get_value("threedecks/parse_error") == 1
+    spider.closed("test")
+
+
+def test_fake_site_handler_registry_serves_ships_and_captures(tmp_path):
+    from urllib.request import urlopen
+
+    from resume_harness import FakeSite
+
+    site = FakeSite(range(1, 3)).start()
+    try:
+        body = urlopen(f"{site.base_url}/index.php?display_type=show_ship&id=1").read()
+        assert b"Ship 1" in body
+        assert site.count(1) == 1
+        assert site.total_ship_requests == 1
+
+        post = urlopen(
+            f"{site.base_url}/index.php?display_type=select_capture",
+            data=b"select_from_nation=7",
+        ).read()
+        assert b"capture_list" in post
+    finally:
+        site.stop()

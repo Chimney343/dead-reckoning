@@ -12,6 +12,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -54,13 +55,20 @@ NOT_FOUND_PAGE = (
 class FakeSite:
     def __init__(self, ship_ids):
         self.ship_ids = set(ship_ids)
-        self.counts: dict[int, int] = {}
+        # Counted per (display_type, key): ship ids are their own kind of page.
+        self.counts: dict[tuple[str, str], int] = {}
         self.block_id: int | None = None
         self.block_active = False
         self.block_limit: int | None = None  # stop blocking after this many hits
         self.drop_ships = False  # close ship-page connections without answering
         self.hang_secs = 0.0  # answer ship pages only after this long
+        self.blocked: set[tuple[str, str]] = set()  # (display_type, key) answered with 429
         self._lock = threading.Lock()
+
+        # display_type -> handler. Each Part B adds its own handlers with
+        # add_get_handler / add_post_handler, never by editing these.
+        self.get_handlers: dict[str, Callable] = {"show_ship": self._serve_ship}
+        self.post_handlers: dict[str, Callable] = {"select_capture": self._serve_captures}
 
         outer = self
 
@@ -94,42 +102,64 @@ class FakeSite:
                     return
                 if parsed.path == "/index.php":
                     query = parse_qs(parsed.query)
-                    if query.get("display_type") == ["show_ship"]:
-                        td_id = int(query.get("id", ["0"])[0])
-                        with outer._lock:
-                            outer.counts[td_id] = outer.counts.get(td_id, 0) + 1
-                            blocked = outer.block_active and td_id == outer.block_id
-                            if blocked and outer.block_limit is not None:
-                                outer.block_limit -= 1
-                                outer.block_active = outer.block_limit > 0
-                        if outer.hang_secs:
-                            time.sleep(outer.hang_secs)
-                        if outer.drop_ships:  # like a dead network: no response at all
-                            self.close_connection = True
-                        elif blocked:
-                            self._send(429, b"<html>Too Many Requests</html>")
-                        elif td_id in outer.ship_ids:
-                            self._send(200, SHIP_PAGE.format(td_id=td_id).encode())
-                        else:
-                            self._send(200, NOT_FOUND_PAGE.encode())
+                    display_type = (query.get("display_type") or [""])[0]
+                    handler = outer.get_handlers.get(display_type)
+                    if handler is not None:
+                        handler(self, query)
                         return
                 self._send(404, b"not found")
 
             def do_POST(self):
-                # The captures form lists every ship id as captured (no captor link).
-                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
                 query = parse_qs(urlparse(self.path).query)
-                if query.get("display_type") != ["select_capture"]:
+                display_type = (query.get("display_type") or [""])[0]
+                handler = outer.post_handlers.get(display_type)
+                if handler is None:
                     self._send(404, b"not found")
                     return
-                rows = "".join(
-                    CAPTURES_ROW.format(td_id=i) for i in sorted(outer.ship_ids)
-                )
-                body = f"<html><body><div id='datacol'><table id='capture_list'>{rows}"
-                self._send(200, f"{body}</table></div></body></html>".encode())
+                handler(self, query, body)
 
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self._thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+
+    def add_get_handler(self, display_type: str, handler: Callable) -> None:
+        self.get_handlers[display_type] = handler
+
+    def add_post_handler(self, display_type: str, handler: Callable) -> None:
+        self.post_handlers[display_type] = handler
+
+    def _count(self, display_type: str, key) -> None:
+        with self._lock:
+            marker = (display_type, str(key))
+            self.counts[marker] = self.counts.get(marker, 0) + 1
+
+    def _serve_ship(self, h, query):
+        td_id = int(query.get("id", ["0"])[0])
+        self._count("show_ship", td_id)
+        with self._lock:
+            blocked = (self.block_active and td_id == self.block_id) or (
+                ("show_ship", str(td_id)) in self.blocked
+            )
+            if blocked and self.block_limit is not None:
+                self.block_limit -= 1
+                self.block_active = self.block_limit > 0
+        if self.hang_secs:
+            time.sleep(self.hang_secs)
+        if self.drop_ships:  # like a dead network: no response at all
+            h.close_connection = True
+        elif blocked:
+            h._send(429, b"<html>Too Many Requests</html>")
+        elif td_id in self.ship_ids:
+            h._send(200, SHIP_PAGE.format(td_id=td_id).encode())
+        else:
+            h._send(200, NOT_FOUND_PAGE.encode())
+
+    def _serve_captures(self, h, query, body):
+        # The captures form lists every ship id as captured (no captor link).
+        self._count("select_capture", "all")
+        rows = "".join(CAPTURES_ROW.format(td_id=i) for i in sorted(self.ship_ids))
+        html = f"<html><body><div id='datacol'><table id='capture_list'>{rows}"
+        h._send(200, f"{html}</table></div></body></html>".encode())
 
     @property
     def base_url(self) -> str:
@@ -147,11 +177,15 @@ class FakeSite:
     @property
     def total_ship_requests(self) -> int:
         with self._lock:
-            return sum(self.counts.values())
+            return sum(n for (dt, _key), n in self.counts.items() if dt == "show_ship")
 
     def count(self, td_id: int) -> int:
         with self._lock:
-            return self.counts.get(td_id, 0)
+            return self.counts.get(("show_ship", str(td_id)), 0)
+
+    def count_page(self, display_type: str, key) -> int:
+        with self._lock:
+            return self.counts.get((display_type, str(key)), 0)
 
 
 def crawl_env(data_dir: Path, base_url: str) -> dict:
@@ -187,10 +221,11 @@ def crawl_command(spider: str, extra: list[str] | None = None) -> list[str]:
     ]
 
 
-def run_crawl(data_dir: Path, base_url: str, extra: list[str] | None = None, timeout=240):
+def run_crawl(data_dir: Path, base_url: str, extra: list[str] | None = None, timeout=240,
+              spider: str = "ships_all"):
     """Run one crawl to completion; return (returncode, output)."""
     proc = subprocess.Popen(
-        crawl_command("ships_all", extra),
+        crawl_command(spider, extra),
         cwd=str(SCRAPY_DIR),
         env=crawl_env(data_dir, base_url),
         stdout=subprocess.PIPE,
@@ -206,9 +241,10 @@ def run_crawl(data_dir: Path, base_url: str, extra: list[str] | None = None, tim
     return proc.returncode, output
 
 
-def start_crawl(data_dir: Path, base_url: str, extra: list[str] | None = None):
+def start_crawl(data_dir: Path, base_url: str, extra: list[str] | None = None,
+                spider: str = "ships_all"):
     return subprocess.Popen(
-        crawl_command("ships_all", extra),
+        crawl_command(spider, extra),
         cwd=str(SCRAPY_DIR),
         env=crawl_env(data_dir, base_url),
         stdout=subprocess.PIPE,
