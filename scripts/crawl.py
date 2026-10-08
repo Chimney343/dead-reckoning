@@ -54,7 +54,7 @@ TIERS = ("captures", "ships_by_nation", "ships_all")
 # Non-ship crawlers (actions, fleets) run under this driver too, for the lock,
 # watchdog and logs, but are opt-in: each Part B plan appends its spider's name.
 # The default stays TIERS, so crawl_all.py and a bare crawl.py never run them.
-EXTRA_TIERS: tuple[str, ...] = ()
+EXTRA_TIERS: tuple[str, ...] = ("actions",)
 
 WATCH_SECS = 30  # how often the watchdog looks at the heartbeat
 SUSPEND_GAP_SECS = 120  # a longer gap between looks means the PC was asleep

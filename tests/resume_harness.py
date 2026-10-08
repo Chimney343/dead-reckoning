@@ -63,6 +63,11 @@ class FakeSite:
         self.drop_ships = False  # close ship-page connections without answering
         self.hang_secs = 0.0  # answer ship pages only after this long
         self.blocked: set[tuple[str, str]] = set()  # (display_type, key) answered with 429
+        # Action-crawl blocks (Task A7): one action page, or one index page.
+        self.action_block_id: int | None = None
+        self.action_block_active = False
+        self.action_block_limit: int | None = None
+        self.action_block_page: int | None = None
         self._lock = threading.Lock()
 
         # display_type -> handler. Each Part B adds its own handlers with
@@ -186,6 +191,98 @@ class FakeSite:
     def count_page(self, display_type: str, key) -> int:
         with self._lock:
             return self.counts.get((display_type, str(key)), 0)
+
+
+ACTION_PAGE = """<!DOCTYPE html>
+<html><head><title>Action {action_id}</title></head><body>
+<div id="datacol">
+<h1 class="column8 float_left">Action {action_id}</h1>
+<div class="column8"><strong>1<sup>st</sup> January 1700<br /></strong></div>
+<table id="table_action_info">
+<thead><tr><th>&nbsp;</th></tr></thead>
+<tbody>
+<tr><th colspan="4"><h2>
+<a href="index.php?display_type=show_nation&amp;id=1">Great Britain</a></h2></th></tr>
+<tr><th class="column2 alpha">Ship Name</th><th class="column3">Commander</th>
+<th class="column3">Notes</th></tr>
+<tr><td class="column2 alpha"><span class="hidden">Name : </span>
+<a href="index.php?display_type=show_ship&amp;id=42" class="shiplink">Ship One (74)</a></td>
+<td class="column3">&nbsp;</td><td class="column3">note</td></tr>
+</tbody>
+</table>
+</div>
+<span id="copywrite_message">Copyright &copy; Cy Harrison</span>
+</body></html>"""
+
+ACTION_FIND_PAGE = (
+    "<!DOCTYPE html><html><head><title>Find an action</title></head><body>"
+    "<div id='datacol'><h1>Find an action</h1></div>"
+    "<span id='copywrite_message'>Copyright &copy; Cy Harrison</span></body></html>"
+)
+
+
+def add_action_routes(site, action_ids):
+    """Serve the action index and action pages on ``site`` (Task A7)."""
+    ids = sorted(action_ids)
+    per_page = 50
+    pages = max(1, (len(ids) + per_page - 1) // per_page)
+
+    def index_page(page):
+        start = (page - 1) * per_page
+        chunk = ids[start : start + per_page]
+        rows = "".join(
+            '<tr><td class="col_battle_dates"><span title="1st January 1700">1.1.1700</span></td>'
+            f'<td class="col_battle"><a href="index.php?display_type=show_battle&amp;id={i}">'
+            f"Action {i}</a></td>"
+            '<td class="col_action_type">Fleet action</td><td class="col_war"></td></tr>'
+            for i in chunk
+        )
+        return (
+            "<!DOCTYPE html><html><head><title>Action Search Results</title></head><body>"
+            "<div id='datacol'><form id='action_selector'></form>"
+            "<table id='table_actions_list'>"
+            f"<tr><th colspan='3'><h2>Action Search Results, {len(ids)} Records Found"
+            "</h2></th></tr>"
+            "<tr><td colspan='3'>&nbsp;</td></tr>"
+            "<tr><th class='col_battle_dates'>Date</th><th class='col_battle'>Name</th>"
+            "<th class='col_action_type'>Type</th><th class='cal_war'>War</th></tr>"
+            f"{rows}</table><span>Showing Page {page} of {pages}</span></div>"
+            "<span id='copywrite_message'>Copyright &copy; Cy Harrison</span></body></html>"
+        )
+
+    def serve_battle(h, query):
+        key = (query.get("id") or ["0"])[0]
+        site._count("show_battle", key)
+        blocked = site.action_block_active and int(key) == site.action_block_id
+        if blocked and site.action_block_limit is not None:
+            site.action_block_limit -= 1
+            site.action_block_active = site.action_block_limit > 0
+        if blocked:
+            h._send(429, b"<html>Too Many Requests</html>")
+        elif int(key) in ids:
+            h._send(200, ACTION_PAGE.format(action_id=int(key)).encode())
+        else:  # a missing action id is a 302 to the action search
+            h.send_response(302)
+            h.send_header("Location", "/index.php?display_type=select_action")
+            h.send_header("Content-Length", "0")
+            h.end_headers()
+
+    def serve_action_index_get(h, query):
+        site._count("select_action", "get")
+        h._send(200, ACTION_FIND_PAGE.encode())
+
+    def serve_action_index_post(h, query, body):
+        form = parse_qs(body.decode())
+        page = int(form.get("page", ["1"])[0])
+        site._count("select_action", page)
+        if site.action_block_active and page == site.action_block_page:
+            h._send(429, b"<html>Too Many Requests</html>")
+            return
+        h._send(200, index_page(page).encode())
+
+    site.add_get_handler("show_battle", serve_battle)
+    site.add_get_handler("select_action", serve_action_index_get)
+    site.add_post_handler("select_action", serve_action_index_post)
 
 
 def crawl_env(data_dir: Path, base_url: str) -> dict:
