@@ -53,6 +53,17 @@ CREATE TABLE IF NOT EXISTS runs (
     pages_fetched INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS frontier_status ON frontier (status, td_id);
+CREATE TABLE IF NOT EXISTS page_frontier (
+    kind TEXT NOT NULL,          -- e.g. 'action', 'action_index', 'fleet', 'fleet_index'
+    page_key TEXT NOT NULL,      -- entity id or index page number, as text
+    discovered_by TEXT,
+    depth INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',   -- pending | done | not_found | error | parse_error
+    attempts INTEGER NOT NULL DEFAULT 0,
+    http_status INTEGER, last_error TEXT, updated_at TEXT,
+    PRIMARY KEY (kind, page_key)
+);
+CREATE INDEX IF NOT EXISTS page_frontier_status ON page_frontier (kind, status);
 """
 
 
@@ -215,6 +226,122 @@ class StateStore:
             count += 1
         return count
 
+    # -- generic page frontier (Task S3) ----------------------------------
+    def seed_pages(self, kind: str, keys, discovered_by: str, depth: int = 0) -> list[str]:
+        """Insert page seeds that are not already known. Returns the new keys, input order."""
+        now = utcnow()
+        new: list[str] = []
+        with self._conn:
+            for key in keys:
+                key = str(key)
+                cur = self._conn.execute(
+                    "INSERT OR IGNORE INTO page_frontier "
+                    "(kind, page_key, discovered_by, depth, status, attempts, updated_at) "
+                    "VALUES (?, ?, ?, ?, 'pending', 0, ?)",
+                    (kind, key, discovered_by, depth, now),
+                )
+                if cur.rowcount:
+                    new.append(key)
+        return new
+
+    def pending_pages(self, kind: str, max_attempts: int = 3):
+        """Stream page keys that still need a fetch: pending or retryable error."""
+        cursor = self._conn.execute(
+            "SELECT page_key FROM page_frontier "
+            "WHERE kind = ? AND status IN ('pending', 'error') AND attempts < ? "
+            "ORDER BY CAST(page_key AS INTEGER), page_key",
+            (kind, max_attempts),
+        )
+        for row in cursor:
+            yield row["page_key"]
+
+    def page_status(self, kind: str, key) -> str | None:
+        row = self._conn.execute(
+            "SELECT status FROM page_frontier WHERE kind = ? AND page_key = ?",
+            (kind, str(key)),
+        ).fetchone()
+        return row["status"] if row else None
+
+    def page_attempts(self, kind: str, key) -> int:
+        row = self._conn.execute(
+            "SELECT attempts FROM page_frontier WHERE kind = ? AND page_key = ?",
+            (kind, str(key)),
+        ).fetchone()
+        return row["attempts"] if row else 0
+
+    def mark_page_status(
+        self,
+        kind: str,
+        key,
+        status: str,
+        *,
+        http_status: int | None = None,
+        error: str | None = None,
+        increment_attempts: bool = False,
+        discovered_by: str | None = None,
+        depth: int = 0,
+    ) -> None:
+        now = utcnow()
+        increment = 1 if increment_attempts else 0
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO page_frontier "
+                "(kind, page_key, discovered_by, depth, status, attempts, http_status, "
+                " last_error, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(kind, page_key) DO UPDATE SET "
+                " status = excluded.status, "
+                " attempts = page_frontier.attempts + ?, "
+                " http_status = excluded.http_status, "
+                " last_error = excluded.last_error, "
+                " updated_at = excluded.updated_at",
+                (
+                    kind,
+                    str(key),
+                    discovered_by,
+                    depth,
+                    status,
+                    increment,
+                    http_status,
+                    error,
+                    now,
+                    increment,
+                ),
+            )
+
+    def release_page_attempts(
+        self, kind: str, keys, reason: str = "network down; attempt not counted"
+    ) -> None:
+        """Give back one attempt each: the failure was not the page's fault."""
+        now = utcnow()
+        with self._conn:
+            self._conn.executemany(
+                "UPDATE page_frontier SET attempts = MAX(attempts - 1, 0), status = 'pending', "
+                "last_error = ?, updated_at = ? WHERE kind = ? AND page_key = ?",
+                [(reason, now, kind, str(key)) for key in keys],
+            )
+
+    def page_counts_by_status(self, kind: str) -> dict[str, int]:
+        rows = self._conn.execute(
+            "SELECT status, COUNT(*) AS n FROM page_frontier WHERE kind = ? GROUP BY status",
+            (kind,),
+        ).fetchall()
+        return {row["status"]: row["n"] for row in rows}
+
+    def _page_done_sql(self, kind: str, key, now: str) -> None:
+        """The "mark done" upsert for one page, without committing.
+
+        A kind-specific ``save_*()`` calls this inside its own ``with self._conn``
+        so the record and the done mark are written in one transaction.
+        """
+        self._conn.execute(
+            "INSERT INTO page_frontier (kind, page_key, status, attempts, updated_at) "
+            "VALUES (?, ?, 'done', 0, ?) "
+            "ON CONFLICT(kind, page_key) DO UPDATE SET "
+            " status = 'done', updated_at = excluded.updated_at",
+            (kind, str(key), now),
+        )
+
     # -- records -----------------------------------------------------------
     def save_ship(self, record: ShipRecord) -> None:
         """Upsert the record and mark the page done in one transaction."""
@@ -295,10 +422,17 @@ class StateStore:
         with self._conn:
             cur = self._conn.execute(
                 "UPDATE runs SET close_reason = 'interrupted', finished_at = COALESCE("
-                " (SELECT MAX(f.updated_at) FROM frontier f"
-                "  WHERE f.updated_at >= runs.started_at AND f.updated_at < COALESCE("
-                "   (SELECT MIN(r.started_at) FROM runs r WHERE r.run_id > runs.run_id),"
-                "   '9999')),"
+                " (SELECT MAX(u) FROM ("
+                "  SELECT f.updated_at AS u FROM frontier f"
+                "   WHERE f.updated_at >= runs.started_at AND f.updated_at < COALESCE("
+                "    (SELECT MIN(r.started_at) FROM runs r WHERE r.run_id > runs.run_id),"
+                "    '9999')"
+                "  UNION ALL"
+                "  SELECT p.updated_at FROM page_frontier p"
+                "   WHERE p.updated_at >= runs.started_at AND p.updated_at < COALESCE("
+                "    (SELECT MIN(r.started_at) FROM runs r WHERE r.run_id > runs.run_id),"
+                "    '9999')"
+                " )),"
                 " started_at) "
                 "WHERE finished_at IS NULL"
             )

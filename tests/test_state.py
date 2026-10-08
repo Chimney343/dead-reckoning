@@ -159,3 +159,148 @@ def test_release_attempts_gives_one_back(tmp_path):
     store.release_attempts([1])
     assert (store.status(1), store.attempts(1)) == ("pending", 1)
     store.close()
+
+
+# --- the generic page frontier (Task S3) --------------------------------------
+#
+# Action and fleet ids are their own id spaces (battle 157 is not ship 157), so
+# they live in ``page_frontier``, keyed by (kind, page_key), beside the ship
+# ``frontier``.
+
+OLD_SCHEMA = """
+CREATE TABLE IF NOT EXISTS frontier (
+    td_id INTEGER PRIMARY KEY,
+    discovered_by TEXT,
+    depth INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    http_status INTEGER,
+    last_error TEXT,
+    updated_at TEXT
+);
+CREATE TABLE IF NOT EXISTS ships (
+    td_id INTEGER PRIMARY KEY,
+    record_json TEXT NOT NULL,
+    parser_version TEXT,
+    content_sha256 TEXT,
+    fetched_at TEXT
+);
+CREATE TABLE IF NOT EXISTS captures (
+    key TEXT PRIMARY KEY,
+    row_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS runs (
+    run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spider TEXT,
+    started_at TEXT,
+    finished_at TEXT,
+    close_reason TEXT,
+    pages_fetched INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS frontier_status ON frontier (status, td_id);
+"""
+
+
+def test_seed_pages_is_idempotent_and_returns_only_new_keys(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    assert store.seed_pages("action", ["10", "2", "2"], discovered_by="history") == ["10", "2"]
+    assert store.seed_pages("action", ["2", "3"], discovered_by="index") == ["3"]
+    store.close()
+
+
+def test_pending_pages_are_in_numeric_order(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.seed_pages("action", ["10", "9", "2"], discovered_by="x")
+    assert list(store.pending_pages("action")) == ["2", "9", "10"]
+    store.close()
+
+
+def test_page_namespaces_are_separate_from_ships(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.seed([157], discovered_by="test")
+    store.save_ship(make_ship(157))
+    store.seed_pages("action", ["157"], discovered_by="test")
+    assert store.status(157) == "done"
+    assert store.page_status("action", "157") == "pending"
+    store.close()
+
+
+def test_page_attempts_count_up_and_cap(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.seed_pages("action", ["5"], discovered_by="x")
+    for _ in range(3):
+        store.mark_page_status("action", "5", "error", error="boom", increment_attempts=True)
+    assert store.page_attempts("action", "5") == 3
+    assert list(store.pending_pages("action", max_attempts=3)) == []
+    store.close()
+
+
+def test_release_page_attempts_gives_one_back(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.mark_page_status("action", "1", "error", increment_attempts=True)
+    store.mark_page_status("action", "1", "error", increment_attempts=True)
+    store.release_page_attempts("action", ["1"])
+    assert (store.page_status("action", "1"), store.page_attempts("action", "1")) == ("pending", 1)
+    store.close()
+
+
+def test_page_counts_by_status(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.seed_pages("action_index", ["1", "2", "3"], discovered_by="x")
+    store.mark_page_status("action_index", "1", "done")
+    store.mark_page_status("action_index", "2", "not_found")
+    counts = store.page_counts_by_status("action_index")
+    assert counts["pending"] == 1
+    assert counts["done"] == 1
+    assert counts["not_found"] == 1
+    store.close()
+
+
+def test_reopen_keeps_the_page_frontier(tmp_path):
+    path = tmp_path / "state.sqlite"
+    store = StateStore(path)
+    store.seed_pages("action", ["9"], discovered_by="x")
+    store.mark_page_status("action", "9", "done")
+    store.close()
+
+    reopened = StateStore(path)
+    assert reopened.page_status("action", "9") == "done"
+    reopened.close()
+
+
+def test_close_open_runs_uses_a_page_frontier_update_time(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    killed = store.start_run("actions")
+    with store._conn:  # noqa: SLF001
+        store._conn.execute(  # noqa: SLF001
+            "UPDATE runs SET started_at = ? WHERE run_id = ?",
+            ("2020-01-01T00:00:00Z", killed),
+        )
+        store._conn.execute(  # noqa: SLF001
+            "INSERT INTO page_frontier (kind, page_key, status, updated_at) "
+            "VALUES ('action', '1', 'done', '2020-01-01T00:05:00Z')"
+        )
+    store.start_run("captures")  # the next session closes the interrupted one
+    assert store.get_run(killed)["finished_at"] == "2020-01-01T00:05:00Z"
+    store.close()
+
+
+def test_opening_an_old_schema_adds_the_page_frontier(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "state.sqlite"
+    conn = sqlite3.connect(str(path))
+    conn.executescript(OLD_SCHEMA)
+    conn.execute(
+        "INSERT INTO ships (td_id, record_json) VALUES (2682, '{\"td_id\": 2682}')"
+    )
+    conn.execute("INSERT INTO frontier (td_id, status) VALUES (2682, 'done')")
+    conn.commit()
+    conn.close()
+
+    store = StateStore(path)
+    assert store.get_ship(2682)["td_id"] == 2682
+    assert store.status(2682) == "done"
+    store.seed_pages("action", ["1"], discovered_by="x")
+    assert store.page_status("action", "1") == "pending"
+    store.close()
