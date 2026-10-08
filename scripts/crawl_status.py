@@ -38,7 +38,8 @@ def main(argv: list[str] | None = None) -> int:
         if last_run and last_run.get("started_at"):
             print(
                 f"last run      : {last_run['spider']} started {last_run['started_at']} "
-                f"({last_run.get('pages_fetched', 0)} items, {last_run.get('close_reason')})"
+                f"({last_run.get('pages_fetched', 0)} pages fetched from the site, "
+                f"{last_run.get('close_reason')})"
             )
             pages = last_run.get("pages_fetched") or 0
             if pages and last_run.get("finished_at"):

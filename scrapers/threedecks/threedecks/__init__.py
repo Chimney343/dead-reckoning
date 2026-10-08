@@ -7,4 +7,4 @@ those functions. Progress lives in ``data/threedecks/state.sqlite`` so a
 cancelled or crashed run resumes from where it stopped.
 """
 
-PARSER_VERSION = "1"
+PARSER_VERSION = "4"

@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "grug": {
+      "source": "replete/grug",
+      "sourceType": "github",
+      "skillPath": "grug/SKILL.md",
+      "computedHash": "61647e62d27e3d4eef3653e2bca4596a1dc15778e342142103d2355f6c2e9bcf"
+    },
+    "grug-brained-dev": {
+      "source": "joshuadavidthomas/agent-skills",
+      "sourceType": "github",
+      "skillPath": "grug-brained-dev/SKILL.md",
+      "computedHash": "c2312e54f30c24ab504280155479308cf07a5673181b5feccf9c99fcc4c7f9d1"
+    },
     "scrapy-web-scraping": {
       "source": "mindrally/skills",
       "sourceType": "github",

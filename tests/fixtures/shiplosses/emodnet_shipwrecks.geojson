@@ -1,0 +1,62 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.27436077,
+          50.03943289
+        ]
+      },
+      "properties": {
+        "source_id": "1000049",
+        "name": "SCHIEDAM",
+        "country": "United Kingdom",
+        "sink_context": "Stranded at Jangye-ryn during a gale in 1684.",
+        "sink_yr": "1684",
+        "obj_type": "Transport vessel",
+        "place_orig": "Tangier",
+        "place_dest": "n/a",
+        "source_inf": "Historic England"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.0,
+          -20.0
+        ]
+      },
+      "properties": {
+        "source_id": "2",
+        "name": "n/a",
+        "country": "n/a",
+        "sink_context": "n/a",
+        "sink_yr": "n/a",
+        "obj_type": "n/a",
+        "place_orig": "n/a",
+        "place_dest": "n/a",
+        "source_inf": "n/a"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "source_id": "3",
+        "name": "No Geom",
+        "country": "Ireland",
+        "sink_context": "Sank in 1864.",
+        "sink_yr": "1864",
+        "obj_type": "Steamer",
+        "place_orig": "n/a",
+        "place_dest": "n/a",
+        "source_inf": "SHOM"
+      }
+    }
+  ]
+}

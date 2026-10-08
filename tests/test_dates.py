@@ -130,3 +130,38 @@ def test_guns_with_pound_obus():
 def test_guns_unparseable():
     assert parse_guns("Unknown") is None
     assert parse_guns("74") is None
+
+
+# --- qualifiers seen in the 2026-10-03 smoke run ----------------------------
+
+
+@pytest.mark.parametrize(
+    "raw,qualifier,iso,alt",
+    [
+        ("c.18.6.1744", "c.", "1744-06-18", None),
+        ("c.1711", "c.", "1711", None),
+        ("aft.9.1744", "aft.", "1744-09", None),
+        ("aft.15.2.1745/46", "aft.", "1745-02-15", 1746),
+    ],
+)
+def test_circa_and_after_qualifiers(raw, qualifier, iso, alt):
+    d = parse_td_date(raw)
+    assert (d.raw, d.qualifier, d.iso, d.julian_alt_year) == (raw, qualifier, iso, alt)
+
+
+@pytest.mark.parametrize(
+    "raw,alt",
+    [
+        ("26.2.1708/9", 1709),  # seen in the overnight crawl
+        ("12.3.1703/4", 1704),
+        ("1.2.1702/03", 1703),
+        ("31.12.1799/0", 1800),
+        ("31.12.1799/00", 1800),
+        ("1.1.1799/1800", 1800),
+        ("3.1709/10", 1710),
+    ],
+)
+def test_julian_alternate_year_of_any_width(raw, alt):
+    d = parse_td_date(raw)
+    assert d.julian_alt_year == alt
+    assert d.precision in ("day", "month")

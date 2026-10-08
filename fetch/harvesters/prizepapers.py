@@ -16,15 +16,24 @@ from ..manifest import Entry
 from .base import file_record, save_json
 
 DOCSTRCTS = ("ship", "capture")
+QUERIES = [
+    ("ship", "DOCSTRCT:ship"),
+    ("capture", "DOCSTRCT:capture"),
+    ("event", "DOCTYPE:EVENT"),
+]
 PAGE_SIZE = 100
 RESULT_FIELDS = [
     "PI",
+    "PI_TOPSTRUCT",
     "IDDOC",
+    "IDDOC_OWNER",
     "IDDOC_PARENT",
     "DOCSTRCT",
+    "DOCTYPE",
     "MD_SHIP_*",
     "MD_CAPTURE_*",
     "MD_EVENT_*",
+    "MD_EVENTDATE*",
     "MD_GEO_POINT",
     "MD_ALL_PLACE*",
     "MD_ALL_COORDS_FOR_SPATIALSEARCH",
@@ -115,8 +124,7 @@ def harvest(
 
     counts: dict[str, int] = {}
     pages: dict[str, int] = {}
-    for docstrct in DOCSTRCTS:
-        query = f"DOCSTRCT:{docstrct}"
+    for docstrct, query in QUERIES:
         offset = 0
         page = 0
         total = 0

@@ -56,12 +56,20 @@ CREATE INDEX IF NOT EXISTS frontier_status ON frontier (status, td_id);
 """
 
 
+def utc_iso(timestamp: float) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(timestamp))
+
+
 def utcnow() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    return utc_iso(time.time())
 
 
 def capture_key(row: CaptureRow) -> str:
-    """Stable key for a capture row: query + captured ship + raw date."""
+    """Stable key for a capture row: query + captured ship + raw date + captors.
+
+    The captors are part of it because the list can name the same ship and date
+    twice, once per captor (Diligencia, 1804/12/07: Pique, and Diana).
+    """
     return "|".join(
         str(part)
         for part in (
@@ -70,6 +78,7 @@ def capture_key(row: CaptureRow) -> str:
             row.war_id,
             row.captured_td_id,
             row.date.raw,
+            ",".join(str(i) for i in sorted(row.captor_td_ids)) or row.captor_text,
         )
     )
 
@@ -172,6 +181,17 @@ class StateStore:
                 ),
             )
 
+    def release_attempts(self, td_ids, reason: str = "network down; attempt not counted") -> None:
+        """Give back one attempt each: the failure was not the page's fault."""
+        now = utcnow()
+        with self._conn:
+            self._conn.executemany(
+                "UPDATE frontier SET attempts = MAX(attempts - 1, 0), status = 'pending', "
+                "last_error = ?, updated_at = ? "
+                "WHERE td_id = ?",
+                [(reason, now, int(td_id)) for td_id in td_ids],
+            )
+
     def counts_by_status(self) -> dict[str, int]:
         rows = self._conn.execute(
             "SELECT status, COUNT(*) AS n FROM frontier GROUP BY status"
@@ -246,6 +266,15 @@ class StateStore:
                 (capture_key(row), payload),
             )
 
+    def clear_captures(self, from_nation_id, by_nation_id, war_id) -> int:
+        """Drop one query's capture rows before it is re-saved, so stale keys go."""
+        prefix = f"{from_nation_id}|{by_nation_id}|{war_id}|"
+        with self._conn:
+            cur = self._conn.execute(
+                "DELETE FROM captures WHERE substr(key, 1, ?) = ?", (len(prefix), prefix)
+            )
+        return cur.rowcount
+
     def capture_count(self) -> int:
         return self._conn.execute("SELECT COUNT(*) AS n FROM captures").fetchone()["n"]
 
@@ -258,7 +287,25 @@ class StateStore:
             yield json.loads(row["row_json"])
 
     # -- runs --------------------------------------------------------------
+    def close_open_runs(self) -> int:
+        """Mark runs that never finished (killed, PC rebooted) as ``interrupted``.
+
+        Their end time is the last frontier update before the next run began.
+        """
+        with self._conn:
+            cur = self._conn.execute(
+                "UPDATE runs SET close_reason = 'interrupted', finished_at = COALESCE("
+                " (SELECT MAX(f.updated_at) FROM frontier f"
+                "  WHERE f.updated_at >= runs.started_at AND f.updated_at < COALESCE("
+                "   (SELECT MIN(r.started_at) FROM runs r WHERE r.run_id > runs.run_id),"
+                "   '9999')),"
+                " started_at) "
+                "WHERE finished_at IS NULL"
+            )
+        return cur.rowcount
+
     def start_run(self, spider: str) -> int:
+        self.close_open_runs()
         with self._conn:
             cur = self._conn.execute(
                 "INSERT INTO runs (spider, started_at, pages_fetched) VALUES (?, ?, 0)",

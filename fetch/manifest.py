@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-VALID_GROUPS = {"captures", "wrecks", "colonial", "routes", "trade"}
+VALID_GROUPS = {"captures", "wrecks", "colonial", "routes", "trade", "gazetteer"}
 VALID_STATUSES = {"verified", "listed", "resolve", "manual", "skip"}
 FINAL_STATUSES = {"verified", "manual", "skip"}
 REQUIRED_FIELDS = {"id", "group", "title", "resolver", "licence", "tier", "status"}

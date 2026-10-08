@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class ValidationPipeline:
     """Drop items that cannot be stored meaningfully."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item, spider=None):  # spider: deprecated by Scrapy 2.19
         if isinstance(item, ShipRecord):
             if item.td_id is None:
                 raise DropItem("ship record without a td_id")
@@ -45,15 +45,15 @@ class StatePipeline:
     def from_crawler(cls, crawler):
         return cls(crawler.settings["DATA_DIR"])
 
-    def open_spider(self, spider) -> None:
+    def open_spider(self, spider=None) -> None:
         self.store = StateStore(self.data_dir / "state.sqlite")
 
-    def close_spider(self, spider) -> None:
+    def close_spider(self, spider=None) -> None:
         if self.store is not None:
             self.store.close()
             self.store = None
 
-    def process_item(self, item, spider):
+    def process_item(self, item, spider=None):
         if self.store is None:  # defensive: pipelines opened outside Scrapy
             self.store = StateStore(self.data_dir / "state.sqlite")
         if isinstance(item, ShipRecord):

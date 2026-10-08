@@ -229,6 +229,10 @@ data/derived/*/*
 data/interim/
 data/raw/_inventory.csv
 
+# Analysis outputs are generated and often non-redistributable; keep only the skeleton.
+analyses/*/outputs/*
+!analyses/*/outputs/.gitkeep
+
 # Three Decks scrape: raw pages, HTTP cache, state and exports stay out of git.
 # The GitHub remote is public, so no scraped content is ever committed (rule 8).
 data/threedecks/

@@ -13,14 +13,22 @@ re-parsing and resuming always read the cache.
 
 from __future__ import annotations
 
+import gzip
 import pickle
 import sqlite3
+import sys
 import time
 import zlib
 from pathlib import Path
 
+import brotli
+from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import Request, Response
+from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import response_from_dict
+
+from threedecks.middlewares import is_blocked, is_challenge
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS responses (
@@ -32,6 +40,75 @@ CREATE TABLE IF NOT EXISTS responses (
     data BLOB NOT NULL
 );
 """
+
+
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:  # a Scrapy dependency, like brotli
+    from backports import zstd
+
+
+def _inflate(body: bytes) -> bytes:
+    try:
+        return zlib.decompress(body)
+    except zlib.error:  # raw deflate, without the zlib header
+        return zlib.decompress(body, -zlib.MAX_WBITS)
+
+
+_DECODERS = {
+    b"gzip": gzip.decompress,
+    b"x-gzip": gzip.decompress,
+    b"deflate": _inflate,
+    b"br": brotli.decompress,
+    b"zstd": zstd.decompress,
+}
+
+
+def load_cached_response(data: bytes) -> Response:
+    """Rebuild a cached response with its body decoded, as the spiders see it.
+
+    The cache sits outside HttpCompressionMiddleware, so stored bodies are still
+    encoded (the site serves zstd). Anything that reads the cache without Scrapy
+    (``scripts/reparse.py``) must go through this.
+    """
+    response = response_from_dict(pickle.loads(zlib.decompress(data)))
+    encodings = [
+        encoding.strip().lower()
+        for value in response.headers.getlist("Content-Encoding")
+        for encoding in value.split(b",")
+    ]
+    if not encodings:
+        return response
+    body = response.body
+    for encoding in reversed(encodings):  # the last encoding applied comes off first
+        if encoding not in _DECODERS:
+            raise ValueError(f"unsupported Content-Encoding {encoding!r} for {response.url}")
+        body = _DECODERS[encoding](body)
+    headers = response.headers.copy()
+    del headers["Content-Encoding"]
+    # The class was guessed from the encoded body; guess again from the decoded one.
+    cls = responsetypes.from_args(headers=headers, url=response.url, body=body)
+    return response.replace(cls=cls, body=body, headers=headers)
+
+
+class ThreeDecksCachePolicy(DummyPolicy):
+    """Cache every page forever, except robots.txt and block/challenge pages.
+
+    With ``HTTPCACHE_EXPIRATION_SECS = 0`` a cached robots.txt would be obeyed
+    for good, so a narrowed robots.txt would never take effect (rule 1); it is
+    fetched once per run instead. A cached challenge or WAF block page would be
+    replayed to every retry after a cool-off, and to every later run.
+    """
+
+    def should_cache_request(self, request: Request) -> bool:
+        if urlparse_cached(request).path == "/robots.txt":
+            return False
+        return super().should_cache_request(request)
+
+    def should_cache_response(self, response: Response, request: Request) -> bool:
+        if is_challenge(response) or is_blocked(response):
+            return False
+        return super().should_cache_response(response, request)
 
 
 class SqliteCacheStorage:
@@ -49,7 +126,9 @@ class SqliteCacheStorage:
         self._conn = sqlite3.connect(str(self.db_path))
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
+        # FULL: a power cut cannot drop a committed page, which would leave a
+        # finished record that reparse.py could not rebuild. One flush per page.
+        self._conn.execute("PRAGMA synchronous=FULL")
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
         self._fingerprinter = spider.crawler.request_fingerprinter

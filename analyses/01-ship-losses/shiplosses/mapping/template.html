@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 10px; left: 10px; z-index: 1000; width: 300px;
+    max-height: calc(100% - 20px); overflow: auto; background: rgba(255,255,255,.94);
+    border-radius: 6px; padding: 10px 12px; box-shadow: 0 1px 6px rgba(0,0,0,.3);
+    font-size: 13px; color: #222;
+  }
+  #panel.collapsed .body { display: none; }
+  #toggler { display: none; }
+  @media (max-width: 600px) {
+    #toggler { display: inline-block; }
+    #panel { width: min(92vw, 340px); }
+  }
+  #panel h1 { font-size: 15px; margin: 0 0 2px; }
+  #panel .sub { color: #555; font-size: 12px; margin-bottom: 8px; }
+  fieldset { border: 1px solid #ccc; border-radius: 4px; margin: 8px 0; padding: 6px 8px; }
+  legend { font-weight: 600; padding: 0 4px; }
+  label { display: block; margin: 2px 0; }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+            margin-right: 5px; vertical-align: -1px; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row input[type=range] { flex: 1; }
+  #legend { position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: rgba(255,255,255,.94); border-radius: 6px; padding: 8px 10px;
+            font-size: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.3); }
+  #legend div { cursor: pointer; }
+  #legend div.off { opacity: .35; }
+  #footer { position: absolute; bottom: 8px; left: 10px; z-index: 1000;
+            background: rgba(255,255,255,.85); border-radius: 4px; padding: 4px 8px;
+            font-size: 11px; color: #333; max-width: 60vw; }
+  .popup table { border-collapse: collapse; }
+  .popup td { padding: 1px 4px; vertical-align: top; }
+  .popup td:first-child { color: #666; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<button id="toggler" style="position:absolute;top:10px;left:10px;z-index:1100">Filters</button>
+<div id="panel">
+  <h1>__TITLE__<button id="toggler2" style="float:right">–</button></h1>
+  <div class="sub">__SUBTITLE__</div>
+  <div class="body">
+    <fieldset>
+      <legend>Years</legend>
+      <div class="row"><span id="y0lab">1500</span>
+        <input id="y0" type="range" min="__MIN_YEAR__" max="__MAX_YEAR__" value="1500">
+        <input id="y1" type="range" min="__MIN_YEAR__" max="__MAX_YEAR__" value="1860">
+        <span id="y1lab">1860</span></div>
+      <div class="row"><button id="play">Play</button><span id="playlab"></span></div>
+    </fieldset>
+    <fieldset>
+      <legend>Colour by</legend>
+      <label><input type="radio" name="colour" value="cause" checked> Cause of loss</label>
+      <label><input type="radio" name="colour" value="flag"> Flag at loss</label>
+    </fieldset>
+    <fieldset><legend>Cause</legend><div id="causeBox"></div></fieldset>
+    <fieldset><legend>Flag at loss</legend><div id="flagBox"></div></fieldset>
+    <fieldset><legend>Origin</legend><div id="originBox"></div></fieldset>
+    <fieldset><legend>Precision / source</legend>
+      <div id="precisionBox"></div>
+      <div id="sourceBox"></div>
+      <label><input type="checkbox" id="changed"> Only ships that changed hands</label>
+      <label><input type="checkbox" id="regions"> Show losses known only by sea area</label>
+    </fieldset>
+  </div>
+</div>
+<div id="legend"></div>
+<div id="footer">__SOURCES_HTML__<br>Built __BUILD__</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const CAUSE_ORDER = __CAUSE_ORDER_JSON__;
+const CAUSE_COLORS = __CAUSE_COLORS_JSON__;
+const PREC = __PREC_JSON__;
+const STRS = __STRS_JSON__;
+const SRC = __SRC_JSON__;
+const RAW = __RAW_JSON__;
+const MEMBERS = __MEMBERS_JSON__;
+const POLITY_COLORS = __POLITY_COLORS_JSON__;
+
+const S = i => STRS[i] || "";
+const LOSSES = RAW.map(a => {
+  const z = S(a[9]).length > 0;
+  const mem = MEMBERS[a[17]] || [[a[14], S(a[15])]];
+  const year = a[1] || null;
+  return {
+    n: S(a[0]), y: year, la: a[2], lo: a[3],
+    p: PREC[a[4]] || 'none', c: CAUSE_ORDER[a[5]] || 'unknown',
+    f: S(a[6]) || 'Unknown', o: S(a[7]) || 'Unknown',
+    ch: !!a[8], l: S(a[9]), cr: S(a[10]), ow: S(a[11]),
+    chg: S(a[12]), fm: S(a[13]) ? S(a[13]).split('|') : [],
+    d: year ? (Math.floor(year / 10) * 10) + 's' : '',
+    s: SRC[a[14]] ? SRC[a[14]].n : '',
+    cnt: a[16] || 1,
+    src: mem.map(m => ({s: SRC[m[0]] ? SRC[m[0]].n : '', i: m[1],
+                        u: SRC[m[0]] ? SRC[m[0]].u : ''}))
+  };
+});
+
+const map = L.map('map', {preferCanvas: true, worldCopyJump: true}).setView([20, 0], 2);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  opacity: 0.6, attribution: '&copy; OpenStreetMap &copy; CARTO'
+}).addTo(map);
+const renderer = L.canvas();
+
+const state = {
+  y0: 1500, y1: 1860, colour: 'cause', play: null,
+  causes: new Set(CAUSE_ORDER),
+  flags: new Set(), origins: new Set(),
+  precisions: new Set(['surveyed', 'reported', 'place']),
+  sources: new Set(), changed: false, regions: false
+};
+
+function colourOf(f) {
+  if (state.colour === 'flag') return POLITY_COLORS[f.f] || '#888888';
+  return CAUSE_COLORS[f.c] || '#888888';
+}
+
+const layer = L.layerGroup().addTo(map);
+const regionLayer = L.layerGroup().addTo(map);
+
+function precisionNote(p) {
+  return {surveyed: 'surveyed wreck site', reported: 'position reported at the time',
+          place: 'approximate: near the named place', region: 'sea area only'}[p] || p;
+}
+
+function passes(f) {
+  if (f.y !== null && (f.y < state.y0 || f.y > state.y1)) return false;
+  if (state.colour === 'cause' && !state.causes.has(f.c)) return false;
+  if (state.colour === 'flag' && state.flags.size && !state.flags.has(f.f)) return false;
+  if (state.origins.size && !state.origins.has(f.o)) return false;
+  if (!state.precisions.has(f.p)) return false;
+  if (state.sources.size && !state.sources.has(f.s)) return false;
+  if (state.changed && !f.ch) return false;
+  return true;
+}
+
+function popup(f) {
+  const where = f.l || (f.la.toFixed(3) + ', ' + f.lo.toFixed(3));
+  const rows = [];
+  rows.push(['Ship', f.n + (f.fm.length ? ' (formerly ' + f.fm.join(', ') + ')' : '')]);
+  rows.push(['Date lost', f.y === null ? 'unknown' : f.y]);
+  rows.push(['Where', where + ' — ' + precisionNote(f.p)]);
+  if (f.o !== 'Unknown') rows.push(['Origin', f.o]);
+  if (f.ow) rows.push(['Owner at loss', f.ow]);
+  if (f.ch && f.chg) rows.push(['Change', f.chg]);
+  if (f.cr) rows.push(['Cause', f.c + ' — ' + f.cr]);
+  for (const link of f.src) {
+    rows.push(['Source', '<a href="' + link.u + '" target="_blank" rel="noopener">'
+      + link.s + ':' + link.i + '</a>']);
+  }
+  return '<div class="popup"><table>' + rows.map(r =>
+    '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table></div>';
+}
+
+function draw() {
+  layer.clearLayers();
+  regionLayer.clearLayers();
+  for (const f of LOSSES) {
+    if (f.p === 'region') {
+      if (!state.regions) continue;
+      const radius = Math.min(30, 4 + 2 * Math.sqrt(f.cnt));
+      L.circleMarker([f.la, f.lo], {radius: radius, color: '#888888', weight: 1,
+        fillColor: '#888888', fillOpacity: 0.25, renderer: renderer})
+        .bindTooltip((f.cnt > 1 ? f.cnt + ' losses, ' : '') + 'sea area only' +
+                     (f.l ? ' — ' + f.l : '')).addTo(regionLayer);
+      continue;
+    }
+    if (!passes(f)) continue;
+    const options = {renderer: renderer};
+    if (f.p === 'place') {
+      options.radius = 5; options.weight = 1.5; options.color = colourOf(f);
+      options.fillColor = colourOf(f); options.fillOpacity = 0.15;
+    } else {
+      options.radius = 4; options.weight = 0.5; options.color = '#ffffff';
+      options.fillColor = colourOf(f); options.fillOpacity = 0.85;
+    }
+    const marker = L.circleMarker([f.la, f.lo], options);
+    marker.bindTooltip(f.n + (f.y ? ' (' + f.y + ')' : '') + ' — ' + f.c,
+                       {direction: 'top'});
+    marker.bindPopup(popup(f));
+    marker.addTo(layer);
+  }
+  document.getElementById('playlab').textContent =
+    state.play === null ? '' : state.y0 + '–' + Math.min(state.y1, state.y0 + 10);
+}
+
+function drawLegend() {
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  if (state.colour === 'cause') {
+    for (const c of CAUSE_ORDER) {
+      const item = document.createElement('div');
+      item.className = state.causes.has(c) ? '' : 'off';
+      item.innerHTML = '<span class="swatch" style="background:' + CAUSE_COLORS[c] + '"></span>' + c;
+      item.onclick = () => {
+        if (state.causes.has(c)) state.causes.delete(c); else state.causes.add(c);
+        drawLegend(); schedule();
+      };
+      legend.appendChild(item);
+    }
+  } else {
+    for (const polity in POLITY_COLORS) {
+      const item = document.createElement('div');
+      item.innerHTML = '<span class="swatch" style="background:' + POLITY_COLORS[polity]
+        + '"></span>' + polity;
+      legend.appendChild(item);
+    }
+  }
+}
+
+function checkbox(container, value, set) {
+  const label = document.createElement('label');
+  const box = document.createElement('input');
+  box.type = 'checkbox'; box.checked = true;
+  box.onchange = () => { if (box.checked) set.add(value); else set.delete(value); schedule(); };
+  label.appendChild(box);
+  label.appendChild(document.createTextNode(' ' + (value || 'unknown')));
+  container.appendChild(label);
+}
+
+let scheduled = false;
+function schedule() { if (!scheduled) { scheduled = true; requestAnimationFrame(() => { scheduled = false; draw(); }); } }
+
+function initControls() {
+  const flags = [...new Set(LOSSES.map(f => f.f).filter(Boolean))].sort();
+  const origins = [...new Set(LOSSES.map(f => f.o).filter(Boolean))].sort();
+  const sources = [...new Set(LOSSES.map(f => f.s).filter(Boolean))].sort();
+  const flagBox = document.getElementById('flagBox');
+  const originBox = document.getElementById('originBox');
+  const sourceBox = document.getElementById('sourceBox');
+  const precisionBox = document.getElementById('precisionBox');
+  const causeBox = document.getElementById('causeBox');
+  for (const c of CAUSE_ORDER) checkbox(causeBox, c, state.causes);
+  for (const f of flags) checkbox(flagBox, f, state.flags);
+  for (const o of origins) checkbox(originBox, o, state.origins);
+  for (const s of sources) checkbox(sourceBox, s, state.sources);
+  for (const p of ['surveyed', 'reported', 'place', 'region']) {
+    const label = document.createElement('label');
+    const box = document.createElement('input'); box.type = 'checkbox';
+    box.checked = state.precisions.has(p);
+    box.onchange = () => { if (box.checked) state.precisions.add(p); else state.precisions.delete(p); schedule(); };
+    label.appendChild(box); label.appendChild(document.createTextNode(' ' + p));
+    precisionBox.appendChild(label);
+  }
+  const y0 = document.getElementById('y0'), y1 = document.getElementById('y1');
+  y0.oninput = () => { state.y0 = +y0.value; document.getElementById('y0lab').textContent = y0.value; schedule(); };
+  y1.oninput = () => { state.y1 = +y1.value; document.getElementById('y1lab').textContent = y1.value; schedule(); };
+  document.getElementById('changed').onchange = e => { state.changed = e.target.checked; schedule(); };
+  document.getElementById('regions').onchange = e => { state.regions = e.target.checked; schedule(); };
+  for (const radio of document.querySelectorAll('input[name=colour]')) {
+    radio.onchange = e => { state.colour = e.target.value; drawLegend(); schedule(); };
+  }
+  document.getElementById('play').onclick = () => {
+    if (state.play) { clearInterval(state.play); state.play = null; draw(); return; }
+    state.y0 = 1500; state.y1 = 1510;
+    document.getElementById('y0').value = 1500; document.getElementById('y1').value = 1510;
+    state.play = setInterval(() => {
+      if (state.y1 >= 1860) { clearInterval(state.play); state.play = null; return; }
+      state.y0 += 1; state.y1 += 1;
+      document.getElementById('y0').value = state.y0;
+      document.getElementById('y1').value = state.y1;
+      document.getElementById('y0lab').textContent = state.y0;
+      document.getElementById('y1lab').textContent = state.y1;
+      draw();
+    }, 300);
+  };
+  const panel = document.getElementById('panel');
+  document.getElementById('toggler').onclick = () => panel.classList.toggle('collapsed');
+  document.getElementById('toggler2').onclick = () => panel.classList.toggle('collapsed');
+}
+
+initControls();
+drawLegend();
+draw();
+</script>
+</body>
+</html>

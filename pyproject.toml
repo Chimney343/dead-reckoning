@@ -12,6 +12,7 @@ dependencies = [
     "scrapy>=2.13",
     "parsel>=1.9",
     "pyarrow>=17.0",
+    "cryptography>=42",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,15 @@ dev = [
     "respx>=0.21",
     "ruff>=0.6",
 ]
+analysis = [
+    "geopandas>=1.0",
+    "pyogrio>=0.7",
+    "shapely>=2.0",
+    "rapidfuzz>=3.0",
+    "Unidecode>=1.3",
+    "matplotlib>=3.8",
+    "pypdf>=4.0",
+]
 
 [project.scripts]
 fetch = "fetch.__main__:main"
@@ -41,11 +51,12 @@ packages = ["fetch", "scrapers/threedecks/threedecks"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "scrapers/threedecks"]
+pythonpath = [".", "scrapers/threedecks", "analyses/01-ship-losses"]
 addopts = "-ra -m 'not network'"
 markers = [
     "network: tests that make live network requests (deselect with '-m \"not network\"')",
     "real_pages: golden tests that need tests/fixtures/real/ (gitignored; skipped when absent)",
+    "real_data: tests that need data/raw/ (skipped when the data is absent)",
 ]
 
 [tool.ruff]

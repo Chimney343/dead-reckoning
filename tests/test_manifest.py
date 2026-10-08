@@ -146,3 +146,14 @@ def test_real_manifest_resolvers_registered():
 def test_real_manifest_yaml_is_list():
     raw = yaml.safe_load(m.manifest_path().read_text(encoding="utf-8"))
     assert isinstance(raw, list)
+
+
+def test_gazetteer_group_is_valid_and_present():
+    assert "gazetteer" in m.VALID_GROUPS
+    entries = m.load_manifest()
+    gazetteers = {e.id for e in entries if e.group == "gazetteer"}
+    assert {"geonames", "naturalearth"} <= gazetteers
+    for entry in entries:
+        if entry.group == "gazetteer":
+            assert entry.status in m.FINAL_STATUSES
+            assert entry.resolver == "direct"

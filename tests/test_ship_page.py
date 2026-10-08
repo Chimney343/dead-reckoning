@@ -11,7 +11,13 @@ from pathlib import Path
 
 import pytest
 from parsel import Selector
-from threedecks.parsing.ship_page import is_not_found_page, parse_ship
+from threedecks.parsing.ship_page import (
+    KNOWN_LABELS,
+    LABEL_CATEGORIES,
+    is_not_found_page,
+    is_ship_page,
+    parse_ship,
+)
 
 SYNTHETIC = Path(__file__).parent / "fixtures" / "synthetic"
 REAL = Path(__file__).parent / "fixtures" / "real"
@@ -196,3 +202,119 @@ def test_golden_6358():
     dates = {item.label: item.date for item in record.lifecycle}
     assert dates["Sold"].iso == "1816-01-08"
     assert record.unknown_sections == []
+
+
+def test_fleets_table_without_row_tags(full):
+    # Real markup: <tbody><td>...</td></tbody>, no <tr> around the cells.
+    assert len(full.fleets) == 1
+    fleet = full.fleets[0]
+    assert (fleet.fleet_id, fleet.fleet_name) == (139, "Miguel Enriquez's privateer fleet")
+    assert (fleet.commander_id, fleet.commander_name) == (49702, "Miguel Enriquez")
+    assert (fleet.from_date.iso, fleet.to_date.iso) == ("1704", "1732")
+    assert fleet.source_code is None
+
+
+def test_page_cut_off_before_the_footer_is_incomplete():
+    html = (SYNTHETIC / "ship_full.html").read_text(encoding="utf-8")
+    assert is_ship_page(Selector(html))
+    truncated = html[: html.index("page_footer")]
+    assert not is_ship_page(Selector(truncated))
+
+
+@pytest.mark.parametrize(
+    "label",
+    ["Home Port", "First Mentioned", "Last known", "First Commissioned", "Extant",
+     "Purchased", "Blown Up", "Sunk as Foundation", "Sunk in Action"],
+)
+def test_labels_seen_in_the_smoke_run_are_known(label):
+    assert label in KNOWN_LABELS
+
+
+@pytest.mark.parametrize(
+    "label,category",
+    [
+        ("National Rate", "attribute"), ("Broken Up to Rebuild", "disposed"),
+        ("Sold for Break Up", "disposed"), ("Sunk as Breakwater", "disposed"),
+        ("Burnt to avoid capture", "lost"), ("Expended as Fireship", "lost"),
+        ("Hired", "acquired"), ("Bought by the Navy", "acquired"), ("Requisitioned", "acquired"),
+        ("Returned to Owners", "transferred"), ("Transfered", "transferred"),
+        ("Given Away", "transferred"), ("Presented", "transferred"), ("Mutinied", "service"),
+        ("Razeed", "service"), ("Hulked", "service"), ("Disarmed", "service"),
+        ("Beached", "lost"), ("Condemned", "disposed"), ("Last Mentioned", "attested"),
+        ("Deleted from list", "disposed"), ("Abandoned", "lost"), ("Rerated", "service"),
+        ("Burnt in Action", "lost"), ("Sunk to avoid capture", "lost"),
+    ],
+)
+def test_labels_seen_overnight_have_a_category(label, category):
+    assert LABEL_CATEGORIES[label] == category
+
+
+@pytest.mark.parametrize(
+    "label,category",
+    [("Sunk as Blockship", "disposed"), ("Captured and burnt", "captured")],
+)
+def test_labels_seen_in_the_v3_crawl_have_a_category(label, category):
+    assert LABEL_CATEGORIES[label] == category
+
+
+# --- real-markup quirks found reviewing the v3 crawl -----------------------
+
+
+@pytest.fixture
+def quirks():
+    return parse_ship(load(SYNTHETIC, "ship_quirks.html"), URL)
+
+
+def _base(record, label):
+    return next(r for r in record.base_rows if r.label == label)
+
+
+def test_shipyard_links_in_history_are_not_ship_ids(quirks):
+    fitting = quirks.history[0]
+    assert fitting.ship_ids == []
+    assert fitting.shipyard_ids == [11, 12]
+
+
+def test_history_text_drops_linked_ship_tooltips(quirks):
+    took = quirks.history[1]
+    assert took.text == "Took the Privateer Test Privateer (4) off the test coast"
+    assert took.ship_ids == [503]
+
+
+def test_base_row_text_drops_tooltips(quirks):
+    assert _base(quirks, "Designed by").text == "Juan Inventado"
+    previously = _base(quirks, "Previously")
+    assert previously.text == "Spanish Merchant galleon 'Test Galleon' (1740) (40)"
+
+
+def test_links_inside_tooltips_are_not_row_links(quirks):
+    assert [link.kind for link in _base(quirks, "Previously").links] == ["show_ship"]
+
+
+def test_tooltip_lines_are_kept_on_the_link(quirks):
+    designer = _base(quirks, "Designed by").links[0]
+    assert designer.tooltip == ["Spanish", "Designer", "Ship Builder", "Service 1750-1760"]
+    previous = _base(quirks, "Previously").links[0]
+    assert previous.tooltip == ["1740-1741", "Spanish 40 Gun", "Merchant Galleon"]
+
+
+def test_dimension_header_without_source_is_not_a_data_row(quirks):
+    assert len(quirks.dimensions) == 1
+    assert [row[0] for row in quirks.dimensions[0].rows] == ["Length of Gundeck", "Breadth"]
+
+
+def test_officer_with_a_single_date_spans_that_date(quirks):
+    single = next(o for o in quirks.officers if o.crewman_id == 504)
+    assert (single.from_date.iso, single.to_date.iso) == ("1646", "1646")
+
+
+def test_officer_with_an_open_range_has_no_end_date(quirks):
+    captain = next(o for o in quirks.officers if o.crewman_id == 505)
+    assert captain.from_date.iso == "1720-01-27"
+    assert captain.to_date is None
+
+
+def test_lifecycle_dates_carry_their_category(full):
+    by_label = {d.label: d.category for d in full.lifecycle}
+    assert by_label["Captured"] == "captured"
+    assert by_label["Sold"] == "disposed"

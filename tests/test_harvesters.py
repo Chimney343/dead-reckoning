@@ -246,6 +246,43 @@ def test_prizepapers_saves_spec_fields_and_pages(tmp_path):
 
 
 @respx.mock
+def test_prizepapers_harvests_event_pages(tmp_path):
+    respx.get("https://portal.prizepapers.de/api/v1/openapi.json").mock(
+        return_value=httpx.Response(200, json={"openapi": "3.0", "paths": {}})
+    )
+    respx.get("https://portal.prizepapers.de/api/v1/index/fields").mock(
+        return_value=httpx.Response(200, json=[{"field": "PI_TOPSTRUCT"}])
+    )
+    sent: list[dict] = []
+
+    def responder(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content or b"{}")
+        sent.append(body)
+        query = body.get("query", "")
+        num = 1 if ("DOCTYPE:EVENT" in query or "capture" in query) else 2
+        docs = [{"PI": f"{query}-{i}", "DOCTYPE": "EVENT", "PI_TOPSTRUCT": "PPN1",
+                 "MD_EVENT_CAPTURE_LINK": "PPN9"} for i in range(num)]
+        return httpx.Response(200, json={"docs": docs, "numFound": num})
+
+    respx.post(url__startswith="https://portal.prizepapers.de/api/v1/index/query").mock(
+        side_effect=responder
+    )
+    entry = make_entry(
+        resolver="prizepapers", url="https://portal.prizepapers.de/api/v1/"
+    )
+    with core.HttpClient(contact="a@b.c", backoff_base=0.0) as client:
+        result = harvesters.HARVESTERS["prizepapers"](
+            entry, client, tmp_path, prior_files={}, force=False, dry_run=False
+        )
+    assert (tmp_path / "event_00000.json").exists()
+    assert result["resolver_input"]["counts"]["event"] == 1
+    event_fields = next(body["resultFields"] for body in sent if "DOCTYPE:EVENT" in body["query"])
+    assert "PI_TOPSTRUCT" in event_fields
+    assert "MD_EVENTDATE*" in event_fields
+    assert "DOCTYPE" in event_fields
+
+
+@respx.mock
 def test_prizepapers_second_run_makes_no_request(tmp_path):
     respx.get("https://portal.prizepapers.de/api/v1/openapi.json").mock(
         return_value=httpx.Response(200, json={"openapi": "3.0"})
@@ -261,11 +298,11 @@ def test_prizepapers_second_run_makes_no_request(tmp_path):
         harvesters.HARVESTERS["prizepapers"](
             entry, client, tmp_path, prior_files={}, force=False, dry_run=False
         )
-        assert route.call_count == 2
+        assert route.call_count == 3
         harvesters.HARVESTERS["prizepapers"](
             entry, client, tmp_path, prior_files={}, force=False, dry_run=False
         )
-    assert route.call_count == 2
+    assert route.call_count == 3
 
 
 @respx.mock

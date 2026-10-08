@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -35,7 +36,14 @@ SHIP_PAGE = """<!DOCTYPE html>
     </tbody>
   </table>
 </div>
+<div class="page_footer"><span id="copywrite_message">Copyright &copy; Cy Harrison</span></div>
 </body></html>"""
+
+CAPTURES_ROW = (
+    '<tr><td><span class="date_field">1800/01/01</span></td>'
+    '<td><a href="index.php?display_type=show_ship&amp;id={td_id}" class="shiplink">'
+    "Ship {td_id}</a></td><td>Taken by the British</td></tr>"
+)
 
 NOT_FOUND_PAGE = (
     "<!DOCTYPE html><html><head><title>Find a ship</title></head>"
@@ -49,6 +57,9 @@ class FakeSite:
         self.counts: dict[int, int] = {}
         self.block_id: int | None = None
         self.block_active = False
+        self.block_limit: int | None = None  # stop blocking after this many hits
+        self.drop_ships = False  # close ship-page connections without answering
+        self.hang_secs = 0.0  # answer ship pages only after this long
         self._lock = threading.Lock()
 
         outer = self
@@ -88,7 +99,14 @@ class FakeSite:
                         with outer._lock:
                             outer.counts[td_id] = outer.counts.get(td_id, 0) + 1
                             blocked = outer.block_active and td_id == outer.block_id
-                        if blocked:
+                            if blocked and outer.block_limit is not None:
+                                outer.block_limit -= 1
+                                outer.block_active = outer.block_limit > 0
+                        if outer.hang_secs:
+                            time.sleep(outer.hang_secs)
+                        if outer.drop_ships:  # like a dead network: no response at all
+                            self.close_connection = True
+                        elif blocked:
                             self._send(429, b"<html>Too Many Requests</html>")
                         elif td_id in outer.ship_ids:
                             self._send(200, SHIP_PAGE.format(td_id=td_id).encode())
@@ -96,6 +114,19 @@ class FakeSite:
                             self._send(200, NOT_FOUND_PAGE.encode())
                         return
                 self._send(404, b"not found")
+
+            def do_POST(self):
+                # The captures form lists every ship id as captured (no captor link).
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                query = parse_qs(urlparse(self.path).query)
+                if query.get("display_type") != ["select_capture"]:
+                    self._send(404, b"not found")
+                    return
+                rows = "".join(
+                    CAPTURES_ROW.format(td_id=i) for i in sorted(outer.ship_ids)
+                )
+                body = f"<html><body><div id='datacol'><table id='capture_list'>{rows}"
+                self._send(200, f"{body}</table></div></body></html>".encode())
 
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self._thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
@@ -141,13 +172,15 @@ def crawl_command(spider: str, extra: list[str] | None = None) -> list[str]:
         "-s",
         "DOWNLOAD_DELAY=0",
         "-s",
-        "RANDOMIZE_DOWNLOAD_DELAY=False",
+        "DOWNLOAD_DELAY_JITTER=0",
         "-s",
         "AUTOTHROTTLE_ENABLED=False",
         "-s",
         "THREEDECKS_MAX_DEPTH=0",
         "-s",
         "THREEDECKS_UPWARD_LIMIT=1",
+        "-s",
+        "THREEDECKS_MAX_COOLOFFS=0",
         "-s",
         "LOG_LEVEL=ERROR",
         *(extra or []),
