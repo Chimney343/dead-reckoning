@@ -7,7 +7,7 @@ from scrapy.exceptions import DropItem, NotConfigured
 from scrapy.http import HtmlResponse, Request
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
-from threedecks.items import CaptureRow, ShipRecord
+from threedecks.items import ActionRecord, CaptureRow, ShipRecord
 from threedecks.parsing.dates import parse_td_date
 from threedecks.pipelines import StatePipeline, ValidationPipeline
 from threedecks.state import StateStore
@@ -45,6 +45,24 @@ def test_validation_passes_valid_items():
     assert pipeline.process_item(row, FakeSpider()) is row
 
 
+def test_validation_rejects_action_without_id_or_name():
+    pipeline = ValidationPipeline()
+    with pytest.raises(DropItem):
+        pipeline.process_item(ActionRecord(battle_id=None, name="x"), FakeSpider())
+    with pytest.raises(DropItem):
+        pipeline.process_item(ActionRecord(battle_id=1, name=""), FakeSpider())
+    valid = ActionRecord(battle_id=1, name="Battle")
+    assert pipeline.process_item(valid, FakeSpider()) is valid
+
+
+def test_action_kind_is_registered():
+    import threedecks.kinds_actions  # noqa: F401  (registers on import)
+    from threedecks.pages import KINDS
+
+    assert KINDS["action"].display_type == "show_battle"
+    assert KINDS["action"].parser_version == "1"
+
+
 def test_state_pipeline_upserts_and_marks_done(tmp_path):
     pipeline = StatePipeline.from_crawler(make_crawler(tmp_path))
     spider = FakeSpider()
@@ -74,6 +92,21 @@ def test_state_pipeline_saves_captures(tmp_path):
 
     store = StateStore(tmp_path / "state.sqlite")
     assert store.capture_count() == 1
+    store.close()
+
+
+def test_state_pipeline_saves_actions(tmp_path):
+    pipeline = StatePipeline.from_crawler(make_crawler(tmp_path))
+    spider = FakeSpider()
+    pipeline.open_spider(spider)
+    try:
+        pipeline.process_item(ActionRecord(battle_id=157, name="Battle of Trafalgar"), spider)
+    finally:
+        pipeline.close_spider(spider)
+
+    store = StateStore(tmp_path / "state.sqlite")
+    assert store.action_count() == 1
+    assert store.page_status("action", "157") == "done"
     store.close()
 
 
