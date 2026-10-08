@@ -115,3 +115,52 @@ def test_reparse_decodes_zstd_and_keeps_provenance(tmp_path):
         assert record["fetched_at"] == "2026-09-21T14:13:20Z"  # the cache's stored_at
     finally:
         store.close()
+
+
+# --- actions (Task A8) ------------------------------------------------------
+
+ACTION_URL = "https://threedecks.org/index.php?display_type=show_battle&id={id}"
+SELECT_ACTION = "https://threedecks.org/index.php?display_type=select_action"
+
+
+def cache_row_for(url: str, html: bytes, *, status: int = 200, headers: dict | None = None,
+                  encoding: str = "zstd") -> bytes:
+    all_headers = {"Content-Type": "text/html; charset=UTF-8", **(headers or {})}
+    body = zstd.compress(html) if encoding == "zstd" else html
+    if encoding == "zstd":
+        all_headers["Content-Encoding"] = "zstd"
+    response = HtmlResponse(url=url, body=body, headers=all_headers, status=status)
+    return zlib.compress(pickle.dumps(response.to_dict(), protocol=4))
+
+
+def test_reparse_action_page_and_redirect(tmp_path):
+    html = (FIXTURES / "action_minimal.html").read_bytes()
+    cache = sqlite3.connect(tmp_path / "httpcache.sqlite")
+    cache.executescript(_SCHEMA)
+    with cache:
+        cache.execute(
+            "INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?)",
+            ("fp1", "actions", ACTION_URL.format(id=42), 200, STORED_AT,
+             cache_row_for(ACTION_URL.format(id=42), html)),
+        )
+        cache.execute(
+            "INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?)",
+            ("fp2", "actions", ACTION_URL.format(id=999), 302, STORED_AT,
+             cache_row_for(ACTION_URL.format(id=999), b"", status=302,
+                           headers={"Location": SELECT_ACTION}, encoding=None)),
+        )
+    cache.close()
+    store = StateStore(tmp_path / "state.sqlite")
+    store.mark_page_status("action", "42", "pending")
+    store.mark_page_status("action", "999", "pending")
+    store.close()
+
+    assert reparse_main(["--data-dir", str(tmp_path), "--kind", "action"]) == 0
+
+    store = StateStore(tmp_path / "state.sqlite")
+    try:
+        assert store.page_status("action", "42") == "done"
+        assert store.get_action(42)["battle_id"] == 42
+        assert store.page_status("action", "999") == "not_found"
+    finally:
+        store.close()

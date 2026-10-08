@@ -29,7 +29,11 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
     try:
         ships = list(store.iter_ships())
         captures = list(store.iter_captures())
+        actions = list(store.iter_actions())
+        action_index = list(store.iter_action_index())
         counts = store.counts_by_status()
+        action_index_counts = store.page_counts_by_status("action_index")
+        action_counts = store.page_counts_by_status("action")
     finally:
         store.close()
 
@@ -80,6 +84,10 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
         if status in {"error", "parse_error"} and count
     }
 
+    actions_report = build_actions_report(
+        ships, actions, action_index, action_index_counts, action_counts
+    )
+
     report = {
         "unparseable_dates": unparseable_dates(ships),
         "ships": len(ships),
@@ -92,8 +100,112 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
         "unchecked_incarnation_links": unchecked,
         "captures_missing_lifecycle": missing_capture_lifecycle,
         "frontier_errors": stuck,
+        "actions": actions_report,
     }
     return report, render_markdown(report)
+
+
+def build_actions_report(ships, actions, action_index, index_counts, action_counts) -> dict:
+    """Data-quality signals for the actions crawl (actions plan 3.4, A8)."""
+    action_by_id = {a.get("battle_id"): a for a in actions}
+    index_ids = {row.get("battle_id") for row in action_index if row.get("battle_id")}
+
+    history: dict[int, set] = {}
+    for ship in ships:
+        for event in ship.get("history", []):
+            for battle_id in event.get("battle_ids", []):
+                history.setdefault(battle_id, set()).add(ship.get("td_id"))
+
+    ship_history_not_in_action: list[dict] = []
+    for battle_id, ship_ids in history.items():
+        action = action_by_id.get(battle_id)
+        if action is None:
+            continue
+        participants = {
+            p.get("td_id")
+            for p in action.get("participants", [])
+            if p.get("td_id") is not None
+        }
+        for ship_id in sorted(ship_ids):
+            if ship_id not in participants:
+                ship_history_not_in_action.append(
+                    {"ship_id": ship_id, "battle_id": battle_id}
+                )
+
+    by_id = {s.get("td_id"): s for s in ships}
+    action_not_in_ship_history: list[dict] = []
+    participants_without_td_id = participants_not_in_ships = 0
+    for action in actions:
+        battle_id = action.get("battle_id")
+        for participant in action.get("participants", []):
+            td_id = participant.get("td_id")
+            if td_id is None:
+                participants_without_td_id += 1
+                continue
+            if td_id not in by_id:
+                participants_not_in_ships += 1
+                continue
+            linked = {
+                b
+                for event in by_id[td_id].get("history", [])
+                for b in event.get("battle_ids", [])
+            }
+            if battle_id not in linked:
+                action_not_in_ship_history.append({"battle_id": battle_id, "td_id": td_id})
+
+    date_mismatches: list[dict] = []
+    for ship in ships:
+        for event in ship.get("history", []):
+            history_date = (event.get("date") or {}).get("iso")
+            for battle_id in event.get("battle_ids", []):
+                action = action_by_id.get(battle_id)
+                if action is None:
+                    continue
+                action_date = (action.get("date") or {}).get("iso")
+                if history_date and action_date and history_date != action_date:
+                    date_mismatches.append(
+                        {
+                            "ship_id": ship.get("td_id"),
+                            "battle_id": battle_id,
+                            "history_date": history_date,
+                            "action_date": action_date,
+                        }
+                    )
+
+    with_coordinates = sum(
+        1
+        for a in actions
+        if a.get("latitude") is not None and a.get("longitude") is not None
+    )
+    unknown_rows = Counter(row for a in actions for row in a.get("unknown_rows", []))
+    unknown_action_sections = Counter(
+        section for a in actions for section in a.get("unknown_sections", [])
+    )
+    action_frontier_errors = {
+        status: count
+        for status, count in {**index_counts, **action_counts}.items()
+        if status in {"error", "parse_error"} and count
+    }
+
+    return {
+        "count": len(actions),
+        "index_rows": len(action_index),
+        "index_only_ids": sorted(index_ids - set(action_by_id)),
+        "fetched_missing_from_index": sorted(set(action_by_id) - index_ids),
+        "history_battles_without_action": sorted(
+            b for b in history if b not in action_by_id
+        ),
+        "ship_history_not_in_action": ship_history_not_in_action,
+        "action_not_in_ship_history": action_not_in_ship_history,
+        "date_mismatches": date_mismatches,
+        "participants_without_td_id": participants_without_td_id,
+        "participants_not_in_ships": participants_not_in_ships,
+        "with_coordinates": with_coordinates,
+        "coordinate_share": (with_coordinates / len(actions)) if actions else 0.0,
+        "unknown_rows": dict(unknown_rows.most_common(50)),
+        "unknown_sections": dict(unknown_action_sections.most_common()),
+        "frontier_errors": action_frontier_errors,
+    }
 
 
 def unparseable_dates(ships: list[dict]) -> list[dict]:
@@ -150,6 +262,33 @@ def render_markdown(report: dict) -> str:
         "",
     ]
     lines += [f"- {status}: {n}" for status, n in report["frontier_errors"].items()] or ["- none"]
+    actions = report["actions"]
+    lines += [
+        "",
+        "## Actions",
+        "",
+        f"- actions stored: {actions['count']}",
+        f"- index rows: {actions['index_rows']}",
+        f"- index ids not fetched: {len(actions['index_only_ids'])}",
+        f"- fetched ids missing from the index: {len(actions['fetched_missing_from_index'])}",
+        f"- history battles with no action record: "
+        f"{len(actions['history_battles_without_action'])}",
+        f"- ship-history battles not listing the ship: "
+        f"{len(actions['ship_history_not_in_action'])}",
+        f"- action participants not in the ship's history: "
+        f"{len(actions['action_not_in_ship_history'])}",
+        f"- action/history date mismatches: {len(actions['date_mismatches'])}",
+        f"- participants with no td_id: {actions['participants_without_td_id']}",
+        f"- participants not found in ships: {actions['participants_not_in_ships']}",
+        f"- actions with coordinates: {actions['with_coordinates']} "
+        f"({actions['coordinate_share']:.0%})",
+        f"- unknown rows: {sum(actions['unknown_rows'].values())}",
+        f"- unknown sections: {sum(actions['unknown_sections'].values())}",
+    ]
+    lines += [
+        f"- frontier errors ({kind}): {n}"
+        for kind, n in actions["frontier_errors"].items()
+    ] or ["- frontier errors: none"]
     bad = report["unparseable_dates"]
     lines += ["", "## Unparseable dates (errors in the source; worth sending to the owner)", ""]
     lines += [f"- ship {d['td_id']}, {d['where']}: {d['raw']}" for d in bad[:100]] or ["- none"]

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from threedecks.items import ShipRecord
+from threedecks.items import (
+    ActionRecord,
+    HistoryEvent,
+    Participant,
+    ShipRecord,
+)
 from threedecks.state import StateStore
 
 from scripts.qa_report import build_report
@@ -74,3 +79,46 @@ def test_report_lists_dates_the_source_got_wrong(tmp_path):
         {"td_id": 7, "where": "Service History", "raw": "36.5.1801"},
     ]
     assert "- ship 7, Launched: 60.1739" in markdown
+
+
+def test_report_reports_action_asymmetry(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_ship(
+        ShipRecord(
+            td_id=2682,
+            name="San Ildefonso",
+            url="u",
+            history=[HistoryEvent(text="x", battle_ids=[5])],
+        )
+    )
+    store.save_action(
+        ActionRecord(
+            battle_id=5,
+            name="Battle Five",
+            participants=[Participant(td_id=9999, ship_label="Other")],
+        )
+    )
+    store.close()
+
+    report, markdown = build_report(tmp_path)
+    actions = report["actions"]
+    # 2682's history cites battle 5, but battle 5 does not list 2682.
+    assert actions["ship_history_not_in_action"] == [{"ship_id": 2682, "battle_id": 5}]
+    assert actions["count"] == 1
+    assert "## Actions" in markdown
+
+
+def test_report_lists_history_battles_without_an_action(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_ship(
+        ShipRecord(
+            td_id=1,
+            name="One",
+            url="u",
+            history=[HistoryEvent(text="x", battle_ids=[42])],
+        )
+    )
+    store.close()
+
+    report, _ = build_report(tmp_path)
+    assert report["actions"]["history_battles_without_action"] == [42]
