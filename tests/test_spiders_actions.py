@@ -5,10 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+from scrapy.exceptions import CloseSpider
 from scrapy.http import HtmlResponse, Request
 from scrapy.utils.test import get_crawler
 from threedecks.forms import action_index_form
 from threedecks.items import HistoryEvent, ShipRecord
+from threedecks.settings import TARGETED_CLOSE_REASON
 from threedecks.spiders.actions import ActionsSpider
 from threedecks.ua import build_user_agent
 
@@ -86,6 +89,20 @@ def test_targeted_action_ids_fetch_only_those_pages(monkeypatch, tmp_path):
     assert display_types(requests) == {"show_battle"}  # no index POST
     assert sorted(int(parse_qs(urlparse(r.url).query)["id"][0]) for r in requests) == [24, 343]
     assert spider.store.page_status("action", "343") == "pending"
+    spider.closed("test")
+
+
+def test_targeted_run_does_not_mark_the_tier_finished(monkeypatch, tmp_path):
+    monkeypatch.setenv("THREEDECKS_CONTACT", "owner@example.org")
+    crawler = get_crawler(
+        ActionsSpider,
+        {"USER_AGENT": build_user_agent(), "THREEDECKS_ACTION_IDS": "343"},
+    )
+    spider = ActionsSpider.from_crawler(crawler, base_url="http://local", data_dir=str(tmp_path))
+    with pytest.raises(CloseSpider) as exc:
+        spider._close_targeted()
+    assert exc.value.reason == TARGETED_CLOSE_REASON
+    assert TARGETED_CLOSE_REASON != "finished"  # or a later crawl would skip the tier
     spider.closed("test")
 
 

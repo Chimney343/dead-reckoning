@@ -45,7 +45,12 @@ from pathlib import Path
 from threedecks.extensions import HEARTBEAT_FILE, SHIP_TARGET_REASON
 from threedecks.lock import CrawlLock, CrawlLockHeld
 from threedecks.politeness import parse_override, refusal_message, refused_overrides
-from threedecks.settings import DATA_DIR, THREEDECKS_BASE_URL, THREEDECKS_INCOMPLETE_LIMIT
+from threedecks.settings import (
+    DATA_DIR,
+    TARGETED_CLOSE_REASON,
+    THREEDECKS_BASE_URL,
+    THREEDECKS_INCOMPLETE_LIMIT,
+)
 from threedecks.state import StateStore, utc_iso
 from threedecks.ua import MISSING_CONTACT_HELP, contact
 
@@ -641,6 +646,9 @@ def crawl(args, tiers, network_waits, overrides, data_dir: Path, log: Log, windo
                 break
             if reason == "closespider_pagecount":  # a smoke run's page cap, not a failure
                 verdict = f"page cap reached during {spider}"
+                break
+            if reason == TARGETED_CLOSE_REASON:  # a targeted run, not the full tier
+                verdict = f"targeted run finished during {spider}"
                 break
             if reason != "finished":
                 status, verdict = 1, f"{spider} closed with reason {reason!r}; stopping"

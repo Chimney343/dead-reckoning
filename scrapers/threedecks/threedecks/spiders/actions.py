@@ -12,10 +12,13 @@ import logging
 
 import scrapy
 from parsel import Selector
+from scrapy import signals
+from scrapy.exceptions import CloseSpider
 
 from threedecks import kinds_actions  # noqa: F401  (registers the ACTION kind)
 from threedecks.forms import action_index_form
 from threedecks.parsing.actions import is_action_index_page, parse_action_index
+from threedecks.settings import TARGETED_CLOSE_REASON
 from threedecks.spiders.base import TDSpider
 
 logger = logging.getLogger(__name__)
@@ -24,6 +27,17 @@ logger = logging.getLogger(__name__)
 class ActionsSpider(TDSpider):
     name = "actions"
     default_max_depth = 0
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        if spider._targeted_action_ids():
+            # A targeted run must not look like the full tier finishing its list.
+            crawler.signals.connect(spider._close_targeted, signal=signals.spider_idle)
+        return spider
+
+    def _close_targeted(self):
+        raise CloseSpider(TARGETED_CLOSE_REASON)
 
     def start_requests(self):
         targeted = self._targeted_action_ids()
