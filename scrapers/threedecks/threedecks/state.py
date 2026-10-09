@@ -20,7 +20,14 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from threedecks.items import ActionIndexRow, ActionRecord, CaptureRow, ShipRecord
+from threedecks.items import (
+    ActionIndexRow,
+    ActionRecord,
+    CaptureRow,
+    FleetIndexRow,
+    FleetRecord,
+    ShipRecord,
+)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS frontier (
@@ -73,6 +80,17 @@ CREATE TABLE IF NOT EXISTS actions (
 );
 CREATE TABLE IF NOT EXISTS action_index (
     battle_id INTEGER PRIMARY KEY,
+    row_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS fleets (
+    fleet_id INTEGER PRIMARY KEY,
+    record_json TEXT NOT NULL,
+    parser_version TEXT,
+    content_sha256 TEXT,
+    fetched_at TEXT
+);
+CREATE TABLE IF NOT EXISTS fleet_index (
+    fleet_id INTEGER PRIMARY KEY,
     row_json TEXT NOT NULL
 );
 """
@@ -496,6 +514,81 @@ class StateStore:
             record = json.loads(row["record_json"])
             for event in record.get("history", []):
                 ids.update(event.get("battle_ids", []))
+        return sorted(ids)
+
+    # -- fleets (Three Decks fleets plan 4.2) -----------------------------
+    def save_fleet(self, record: FleetRecord) -> None:
+        """Upsert the fleet record and mark the page done in one transaction."""
+        if record.fleet_id is None:
+            raise ValueError("cannot save a fleet record without a fleet_id")
+        payload = json.dumps(asdict(record), ensure_ascii=False, sort_keys=True)
+        now = utcnow()
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO fleets "
+                "(fleet_id, record_json, parser_version, content_sha256, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(fleet_id) DO UPDATE SET "
+                " record_json = excluded.record_json, "
+                " parser_version = excluded.parser_version, "
+                " content_sha256 = excluded.content_sha256, "
+                " fetched_at = excluded.fetched_at",
+                (
+                    record.fleet_id,
+                    payload,
+                    record.parser_version,
+                    record.content_sha256,
+                    record.fetched_at or now,
+                ),
+            )
+            self._page_done_sql("fleet", str(record.fleet_id), now)
+
+    def save_fleet_index(self, rows: list[FleetIndexRow]) -> int:
+        """Upsert the index rows and mark the index page done in one transaction.
+
+        Returns how many rows were stored (rows without a fleet id are skipped).
+        """
+        now = utcnow()
+        stored = 0
+        with self._conn:
+            for row in rows:
+                if row.fleet_id is None:
+                    continue
+                payload = json.dumps(asdict(row), ensure_ascii=False, sort_keys=True)
+                self._conn.execute(
+                    "INSERT INTO fleet_index (fleet_id, row_json) VALUES (?, ?) "
+                    "ON CONFLICT(fleet_id) DO UPDATE SET row_json = excluded.row_json",
+                    (row.fleet_id, payload),
+                )
+                stored += 1
+            self._page_done_sql("fleet_index", "1", now)
+        return stored
+
+    def get_fleet(self, fleet_id: int) -> dict | None:
+        row = self._conn.execute(
+            "SELECT record_json FROM fleets WHERE fleet_id = ?", (fleet_id,)
+        ).fetchone()
+        return json.loads(row["record_json"]) if row else None
+
+    def iter_fleets(self):
+        for row in self._conn.execute("SELECT record_json FROM fleets ORDER BY fleet_id"):
+            yield json.loads(row["record_json"])
+
+    def iter_fleet_index(self):
+        for row in self._conn.execute("SELECT row_json FROM fleet_index ORDER BY fleet_id"):
+            yield json.loads(row["row_json"])
+
+    def fleet_count(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) AS n FROM fleets").fetchone()["n"]
+
+    def ship_fleet_ids(self) -> list[int]:
+        """Every fleet id cited by a stored ship's "Fleets" table, sorted and unique."""
+        ids: set[int] = set()
+        for row in self._conn.execute("SELECT record_json FROM ships"):
+            record = json.loads(row["record_json"])
+            for fleet in record.get("fleets", []):
+                if fleet.get("fleet_id") is not None:
+                    ids.add(fleet["fleet_id"])
         return sorted(ids)
 
     # -- runs --------------------------------------------------------------
