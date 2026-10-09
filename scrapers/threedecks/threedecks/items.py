@@ -261,3 +261,70 @@ class ActionRecord:
     fetched_at: str = ""
     content_sha256: str = ""
     parser_version: str = ""
+
+
+# --- fleets (Three Decks fleets plan, 4.1) ----------------------------------
+
+
+@dataclass
+class FleetIndexRow:
+    """One row of the fleet-list index (``show_fleetlist``)."""
+
+    fleet_id: int | None
+    name: str
+    date_from: TDDate | None = None
+    date_to: TDDate | None = None
+    nation_id: int | None = None
+    nation_text: str = ""
+    commander_ids: list[int] = field(default_factory=list)
+    commanders: list[LinkRef] = field(default_factory=list)  # hover-card lines in LinkRef.tooltip
+    cells: list[str] = field(default_factory=list)  # lossless, the 5 cells' visible text
+
+
+@dataclass
+class FleetShip:
+    """One row of a fleet page's ships table."""
+
+    td_id: int | None
+    ship_label: str
+    ship: LinkRef | None = None  # tooltip: ["1787-1814", "British 74 Gun", ...]
+    joined: TDDate | None = None
+    left: TDDate | None = None
+    commander_ids: list[int] = field(default_factory=list)
+    commander_text: str | None = None
+    commanders: list[LinkRef] = field(default_factory=list)
+    notes: str = ""
+    cells: list[str] = field(default_factory=list)  # lossless, every td's visible text
+
+
+@dataclass
+class FleetEvent:
+    """One dated row of a fleet page's event log."""
+
+    date: TDDate | None
+    text: str
+    ship_ids: list[int] = field(default_factory=list)
+    place_ids: list[int] = field(default_factory=list)
+    battle_ids: list[int] = field(default_factory=list)  # ids only; never followed
+    links: list[LinkRef] = field(default_factory=list)
+    source_code: str | None = None
+
+
+@dataclass
+class FleetRecord:
+    fleet_id: int
+    name: str
+    base_rows: list[BaseRow] = field(default_factory=list)
+    commander_ids: list[int] = field(default_factory=list)
+    formed: TDDate | None = None
+    disbanded: TDDate | None = None
+    introduction: str | None = None
+    ships: list[FleetShip] = field(default_factory=list)
+    events: list[FleetEvent] = field(default_factory=list)
+    sources: list[SourceRef] = field(default_factory=list)
+    unknown_labels: list[str] = field(default_factory=list)
+    unknown_sections: list[str] = field(default_factory=list)
+    url: str = ""
+    fetched_at: str = ""
+    content_sha256: str = ""
+    parser_version: str = ""
