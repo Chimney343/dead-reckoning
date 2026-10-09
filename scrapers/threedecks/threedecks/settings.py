@@ -113,6 +113,9 @@ EXTENSIONS = {
     "threedecks.extensions.CrawlBudget": 520,  # off unless crawl.py sets a budget/window
 }
 THREEDECKS_SHIP_TARGET = 0
+# Comma-separated action ids: when set (e.g. the smoke, -s THREEDECKS_ACTION_IDS=343),
+# the actions spider fetches only those battles and never touches the index.
+THREEDECKS_ACTION_IDS = ""
 # Both off (0) by default; scripts/crawl.py --daily-pages/--window set them per tier.
 THREEDECKS_DAILY_PAGES = 0
 THREEDECKS_STOP_AT = 0

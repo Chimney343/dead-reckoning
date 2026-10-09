@@ -26,6 +26,15 @@ class ActionsSpider(TDSpider):
     default_max_depth = 0
 
     def start_requests(self):
+        targeted = self._targeted_action_ids()
+        if targeted:
+            # A smoke run names exact battles so the result is deterministic and
+            # rich; the index (and its 1000+ discovered pages) is left untouched.
+            self.store.seed_pages("action", targeted, discovered_by="targeted")
+            yield from self.entity_requests(
+                "action", [int(key) for key in targeted], discovered_by="targeted"
+            )
+            return
         # Seed from stored ship history first: it costs no requests.
         self.store.seed_pages(
             "action",
@@ -37,6 +46,15 @@ class ActionsSpider(TDSpider):
         for key in self.store.pending_pages("action_index", self.max_attempts):
             yield self.index_request(int(key))
         yield from self.stream_pending_pages("action")
+
+    def _targeted_action_ids(self) -> list[str]:
+        """Action ids named by ``THREEDECKS_ACTION_IDS``; empty means crawl normally."""
+        try:
+            values = self.settings.getlist("THREEDECKS_ACTION_IDS")
+        except AttributeError:  # no crawler (offline tests)
+            return []
+        # Non-numeric entries are ignored so a typo cannot abort the crawl.
+        return [str(value).strip() for value in values if str(value).strip().isdigit()]
 
     def index_request(self, page: int):
         return scrapy.FormRequest(

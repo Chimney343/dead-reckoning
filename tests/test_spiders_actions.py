@@ -75,6 +75,20 @@ def test_history_seeding_requests_the_cited_battles(tmp_path):
     spider.closed("test")
 
 
+def test_targeted_action_ids_fetch_only_those_pages(monkeypatch, tmp_path):
+    monkeypatch.setenv("THREEDECKS_CONTACT", "owner@example.org")
+    crawler = get_crawler(
+        ActionsSpider,
+        {"USER_AGENT": build_user_agent(), "THREEDECKS_ACTION_IDS": "343, 24, not-an-id"},
+    )
+    spider = ActionsSpider.from_crawler(crawler, base_url="http://local", data_dir=str(tmp_path))
+    requests = requests_of(list(spider.start_requests()))
+    assert display_types(requests) == {"show_battle"}  # no index POST
+    assert sorted(int(parse_qs(urlparse(r.url).query)["id"][0]) for r in requests) == [24, 343]
+    assert spider.store.page_status("action", "343") == "pending"
+    spider.closed("test")
+
+
 # --- the index callback -----------------------------------------------------
 
 

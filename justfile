@@ -2,6 +2,7 @@
 # See docs/plans/threedecks-scraper.md for the crawl tiers and the site owner's conditions.
 
 set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
+set dotenv-load := true
 
 fetch := "uv run python -m fetch"
 
@@ -49,9 +50,9 @@ threedecks-crawl ships="5000" *args:
 threedecks-actions *args:
     uv run python scripts/crawl.py --tiers actions {{ args }}
 
-# Actions smoke test: 25 pages (~4 min)
+# Actions smoke test: parses battle 343 (The Spanish Armada; 2 sides, 349 ships) only (~30 s)
 threedecks-actions-smoke *args:
-    uv run python scripts/crawl.py --tiers actions -s CLOSESPIDER_PAGECOUNT=25 {{ args }}
+    uv run python scripts/crawl.py --tiers actions -s THREEDECKS_ACTION_IDS=343 -s CLOSESPIDER_PAGECOUNT=25 {{ args }}
 
 # Crawl 1,000 more ships than are stored now (~2 h), then stop; rerun for the next 1,000
 threedecks-crawl-1000 *args:
