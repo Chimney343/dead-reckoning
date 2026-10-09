@@ -172,6 +172,36 @@ def test_julian_alternate_year_of_any_width(raw, alt):
     assert d.precision in ("day", "month")
 
 
+# --- date forms seen on fleet pages (Task FL1) ------------------------------
+#
+# Fleet-list dates are often year-only or approximate; the event log uses
+# YYYY/MM/DD (with a written-out tooltip) and the base/shp tables use D.M.YYYY.
+# Nothing new is needed in dates.py; these pin the forms so a future change
+# cannot break fleet parsing silently.
+
+
+@pytest.mark.parametrize(
+    "raw,tooltip,qualifier,iso,precision",
+    [
+        ("c.1704", None, "c.", "1704", "year"),
+        ("2.1501", None, None, "1501-02", "month"),
+        ("1798/08/14", "Tuesday 14th of August 1798", None, "1798-08-14", "day"),
+        ("14.8.1798", "14th August 1798", None, "1798-08-14", "day"),
+    ],
+)
+def test_fleet_date_forms(raw, tooltip, qualifier, iso, precision):
+    d = parse_td_date(raw, tooltip)
+    assert d.raw == raw
+    assert d.qualifier == qualifier
+    assert d.iso == iso
+    assert d.precision == precision
+
+
+def test_fleet_event_tooltip_is_kept_raw():
+    d = parse_td_date("1798/08/14", "Tuesday 14th of August 1798")
+    assert d.tooltip == "Tuesday 14th of August 1798"
+
+
 # --- long-form dates in action headers (Task A1) ----------------------------
 
 
