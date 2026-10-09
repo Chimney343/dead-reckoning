@@ -10,6 +10,10 @@ from threedecks.items import (
     ActionRecord,
     ActionSide,
     CaptureRow,
+    FleetEvent,
+    FleetIndexRow,
+    FleetRecord,
+    FleetShip,
     LinkRef,
     Participant,
     ShipRecord,
@@ -92,3 +96,62 @@ def test_export_writes_action_files(tmp_path):
     assert participants.iloc[0]["side_label"] == "Allied"
     assert participants.iloc[0]["division_label"] == "Rear"
     assert participants.iloc[0]["ship_tooltip"] == ""
+
+
+def test_export_writes_fleet_files(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_fleet_index(
+        [FleetIndexRow(fleet_id=1, name="One", nation_id=7)]
+    )
+    store.save_fleet(
+        FleetRecord(
+            fleet_id=1,
+            name="One",
+            ships=[
+                FleetShip(
+                    td_id=5,
+                    ship_label="Ship 5",
+                    joined=parse_td_date("1798/08/14"),
+                    left=parse_td_date("1800"),
+                )
+            ],
+            events=[
+                FleetEvent(date=parse_td_date("1798"), text="evt", place_ids=[9], ship_ids=[5])
+            ],
+            url="u1",
+        )
+    )
+    store.save_fleet(FleetRecord(fleet_id=2, name="Two", url="u2"))
+    store.close()
+
+    out = tmp_path / "exports"
+    assert main(["--data-dir", str(tmp_path), "--out", str(out)]) == 0
+
+    fleet_lines = (out / "fleets.jsonl").read_text(encoding="utf-8").splitlines()
+    index_lines = (out / "fleet_index.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(fleet_lines) == 2
+    assert len(index_lines) == 1
+    assert (out / "fleets.parquet").exists()
+    assert (out / "fleet_ships.parquet").exists()
+    assert (out / "fleet_events.parquet").exists()
+
+    import pandas as pd
+
+    fleets = pd.read_parquet(out / "fleets.parquet").set_index("fleet_id")
+    assert sorted(fleets.index) == [1, 2]
+    assert fleets.loc[1]["nation_id"] == 7
+    assert fleets.loc[1]["ship_count"] == 1
+    assert fleets.loc[1]["event_count"] == 1
+    assert fleets.loc[1]["formed_iso"] is None
+
+    ships = pd.read_parquet(out / "fleet_ships.parquet")
+    assert list(ships["fleet_id"]) == [1]
+    assert ships.iloc[0]["td_id"] == 5
+    assert ships.iloc[0]["joined_iso"] == "1798-08-14"
+
+    events = pd.read_parquet(out / "fleet_events.parquet")
+    assert list(events["fleet_id"]) == [1]
+    assert events.iloc[0]["place_ids"] == "9"
+    assert events.iloc[0]["ship_ids"] == "5"
+    assert not ships["fleet_id"].isna().any()
+    assert not events["fleet_id"].isna().any()

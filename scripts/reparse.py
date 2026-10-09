@@ -27,11 +27,28 @@ from threedecks.parsing.actions import (
     parse_action,
     parse_action_index,
 )
+from threedecks.parsing.fleets import (
+    FLEET_PARSER_VERSION,
+    is_fleet_not_found,
+    is_fleet_page,
+    is_fleetlist_index_page,
+    parse_fleet,
+    parse_fleet_index,
+)
 from threedecks.parsing.ship_page import is_not_found_page, is_ship_page, parse_ship
 from threedecks.state import StateStore, utc_iso
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "threedecks"
-KINDS = ("ship", "action", "action_index", "all")
+KINDS = ("ship", "action", "action_index", "fleet", "fleet_index", "all")
+
+
+def display_type(url: str | None) -> str | None:
+    """The exact ``display_type`` of a cached URL (``show_fleet`` is a prefix of
+    ``show_fleetlist``, so a substring test would confuse the two)."""
+    from urllib.parse import parse_qs, urlparse
+
+    values = parse_qs(urlparse(url or "").query).get("display_type") or []
+    return values[0] if values else None
 
 
 def is_search_redirect(response) -> bool:
@@ -63,6 +80,10 @@ def iter_cached(httpcache: Path, kind: str):
                 yield "action", load_cached_response(row["data"]), row["stored_at"]
             elif kind in ("action_index", "all") and "select_action" in url:
                 yield "action_index", load_cached_response(row["data"]), row["stored_at"]
+            elif kind in ("fleet", "all") and display_type(url) == "show_fleet":
+                yield "fleet", load_cached_response(row["data"]), row["stored_at"]
+            elif kind in ("fleet_index", "all") and display_type(url) == "show_fleetlist":
+                yield "fleet_index", load_cached_response(row["data"]), row["stored_at"]
     finally:
         conn.close()
 
@@ -151,6 +172,50 @@ def reparse_action_index(store, response, stored_at, only_id) -> str:
     return "replay"
 
 
+def reparse_fleet(store, response, stored_at, only_id) -> str:
+    fleet_id = extract_id(response.url)
+    if fleet_id is None or (only_id is not None and fleet_id != only_id):
+        return "skip"
+    if response.status != 200:
+        return "skip"  # a fetch error: its frontier row stays retryable
+    selector = Selector(text=response.text)
+    if is_fleet_not_found(selector):
+        store.mark_page_status("fleet", str(fleet_id), "not_found")
+        return "skip"
+    if not is_fleet_page(selector):
+        store.mark_page_status(
+            "fleet", str(fleet_id), "parse_error", error="incomplete page on reparse"
+        )
+        return "skip"
+    try:
+        record = parse_fleet(
+            selector,
+            response.url,
+            fetched_at=utc_iso(stored_at),
+            content_sha256=hashlib.sha256(response.body).hexdigest(),
+            parser_version=FLEET_PARSER_VERSION,
+        )
+    except Exception as exc:  # keep going; the row says what failed
+        store.mark_page_status("fleet", str(fleet_id), "parse_error", error=repr(exc)[:500])
+        return "fail"
+    store.save_fleet(record)
+    return "replay"
+
+
+def reparse_fleet_index(store, response, stored_at, only_id) -> str:
+    if response.status != 200:
+        return "skip"
+    selector = Selector(text=response.text)
+    if not is_fleetlist_index_page(selector):
+        return "skip"  # e.g. the ship or action search page
+    try:
+        rows = parse_fleet_index(selector)
+    except Exception:  # nothing to key the failure to; report it and move on
+        return "fail"
+    store.save_fleet_index(rows)
+    return "replay"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", default=str(DEFAULT_DATA_DIR))
@@ -167,6 +232,8 @@ def main(argv: list[str] | None = None) -> int:
         "ship": reparse_ship,
         "action": reparse_action,
         "action_index": reparse_action_index,
+        "fleet": reparse_fleet,
+        "fleet_index": reparse_fleet_index,
     }
     try:
         for kind, response, stored_at in iter_cached(data_dir / "httpcache.sqlite", args.kind):

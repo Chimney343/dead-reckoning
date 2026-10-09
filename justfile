@@ -54,6 +54,14 @@ threedecks-actions *args:
 threedecks-actions-smoke *args:
     uv run python scripts/crawl.py --tiers actions -s THREEDECKS_ACTION_IDS=343 -s CLOSESPIDER_PAGECOUNT=25 {{ args }}
 
+# Three Decks fleet lists crawl (~20 min; separate from the ship tiers); rerun to resume
+threedecks-fleets *args:
+    uv run python scripts/crawl.py --tiers fleets {{ args }}
+
+# Fleets smoke test: 25 pages (~4 min)
+threedecks-fleets-smoke *args:
+    uv run python scripts/crawl.py --tiers fleets -s CLOSESPIDER_PAGECOUNT=25 {{ args }}
+
 # Crawl 1,000 more ships than are stored now (~2 h), then stop; rerun for the next 1,000
 threedecks-crawl-1000 *args:
     uv run python scripts/crawl.py --more 1000 {{ args }}

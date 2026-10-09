@@ -125,6 +125,26 @@ def test_actions_is_an_extra_tier_but_not_a_default(monkeypatch, tmp_path):
     assert "actions" not in seen["tiers"]
 
 
+def test_fleets_is_an_extra_tier_but_not_a_default(monkeypatch, tmp_path):
+    assert "fleets" in crawl.EXTRA_TIERS
+    monkeypatch.setenv("THREEDECKS_CONTACT", "test@example.org")
+    monkeypatch.setattr(crawl, "THREEDECKS_BASE_URL", "http://127.0.0.1:9")
+    monkeypatch.setattr(crawl, "DATA_DIR", tmp_path)
+    seen = {}
+
+    def fake_crawl(args, tiers, *rest, **kwargs):
+        seen["tiers"] = tiers
+        return 0
+
+    monkeypatch.setattr(crawl, "crawl", fake_crawl)
+
+    assert crawl.main(["--tiers", "fleets"]) == 0
+    assert seen["tiers"] == ["fleets"]
+    assert crawl.main([]) == 0
+    assert seen["tiers"] == list(crawl.TIERS)
+    assert "fleets" not in seen["tiers"]
+
+
 def test_an_extra_tier_runs_below_any_ship_target(monkeypatch, tmp_path):
     """An extra tier is not skipped by the ship target, and its command carries
     no THREEDECKS_SHIP_TARGET (S1)."""

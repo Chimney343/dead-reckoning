@@ -164,3 +164,61 @@ def test_reparse_action_page_and_redirect(tmp_path):
         assert store.page_status("action", "999") == "not_found"
     finally:
         store.close()
+
+
+# --- fleets (Task FL8) ------------------------------------------------------
+
+
+FLEET_URL = "https://threedecks.org/index.php?display_type=show_fleet&id={id}"
+FLEETLIST = "https://threedecks.org/index.php?display_type=show_fleetlist"
+
+
+def test_reparse_fleet_page(tmp_path):
+    html = (FIXTURES / "fleet_full.html").read_bytes()
+    cache = sqlite3.connect(tmp_path / "httpcache.sqlite")
+    cache.executescript(_SCHEMA)
+    with cache:
+        cache.execute(
+            "INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?)",
+            ("fp1", "fleets", FLEET_URL.format(id=555), 200, STORED_AT,
+             cache_row_for(FLEET_URL.format(id=555), html)),
+        )
+    cache.close()
+    store = StateStore(tmp_path / "state.sqlite")
+    store.mark_page_status("fleet", "555", "pending")
+    store.close()
+
+    assert reparse_main(["--data-dir", str(tmp_path), "--kind", "fleet"]) == 0
+
+    store = StateStore(tmp_path / "state.sqlite")
+    try:
+        assert store.page_status("fleet", "555") == "done"
+        assert store.get_fleet(555)["fleet_id"] == 555
+        assert store.get_fleet(555)["name"] == "Example Fleet"
+    finally:
+        store.close()
+
+
+def test_reparse_fleet_index(tmp_path):
+    html = (FIXTURES / "fleetlist_index.html").read_bytes()
+    cache = sqlite3.connect(tmp_path / "httpcache.sqlite")
+    cache.executescript(_SCHEMA)
+    with cache:
+        cache.execute(
+            "INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?)",
+            ("fp1", "fleets", FLEETLIST, 200, STORED_AT,
+             cache_row_for(FLEETLIST, html)),
+        )
+    cache.close()
+    store = StateStore(tmp_path / "state.sqlite")
+    store.mark_page_status("fleet_index", "1", "pending")
+    store.close()
+
+    assert reparse_main(["--data-dir", str(tmp_path), "--kind", "fleet_index"]) == 0
+
+    store = StateStore(tmp_path / "state.sqlite")
+    try:
+        assert store.page_status("fleet_index", "1") == "done"
+        assert [row["fleet_id"] for row in store.iter_fleet_index()] == [69, 132, 139]
+    finally:
+        store.close()

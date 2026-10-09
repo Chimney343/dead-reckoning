@@ -31,9 +31,13 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
         captures = list(store.iter_captures())
         actions = list(store.iter_actions())
         action_index = list(store.iter_action_index())
+        fleets = list(store.iter_fleets())
+        fleet_index = list(store.iter_fleet_index())
         counts = store.counts_by_status()
         action_index_counts = store.page_counts_by_status("action_index")
         action_counts = store.page_counts_by_status("action")
+        fleet_index_counts = store.page_counts_by_status("fleet_index")
+        fleet_counts = store.page_counts_by_status("fleet")
     finally:
         store.close()
 
@@ -88,6 +92,10 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
         ships, actions, action_index, action_index_counts, action_counts
     )
 
+    fleets_report = build_fleets_report(
+        ships, fleets, fleet_index, fleet_index_counts, fleet_counts
+    )
+
     report = {
         "unparseable_dates": unparseable_dates(ships),
         "ships": len(ships),
@@ -101,6 +109,7 @@ def build_report(data_dir: Path) -> tuple[dict, str]:
         "captures_missing_lifecycle": missing_capture_lifecycle,
         "frontier_errors": stuck,
         "actions": actions_report,
+        "fleets": fleets_report,
     }
     return report, render_markdown(report)
 
@@ -208,6 +217,88 @@ def build_actions_report(ships, actions, action_index, index_counts, action_coun
     }
 
 
+def build_fleets_report(ships, fleets, fleet_index, index_counts, fleet_counts) -> dict:
+    """Data-quality signals for the fleets crawl (fleets plan 3.4)."""
+    fleet_by_id = {f.get("fleet_id"): f for f in fleets}
+    index_ids = {row.get("fleet_id") for row in fleet_index if row.get("fleet_id")}
+    ships_by_id = {s.get("td_id"): s for s in ships}
+
+    # Symmetry with ship records: ship X cites fleet F but F's ships lack X.
+    ship_fleet_not_in_fleet: list[dict] = []
+    for ship in ships:
+        for fleet_row in ship.get("fleets", []):
+            fleet_id = fleet_row.get("fleet_id")
+            if fleet_id is None or fleet_id not in fleet_by_id:
+                continue
+            members = {s.get("td_id") for s in fleet_by_id[fleet_id].get("ships", [])}
+            if ship.get("td_id") not in members:
+                ship_fleet_not_in_fleet.append(
+                    {"ship_id": ship.get("td_id"), "fleet_id": fleet_id}
+                )
+
+    # The reverse: fleet F lists ship X but X's fleets lack F; plus ship checks.
+    fleet_ship_not_in_ship_fleets: list[dict] = []
+    ships_without_td_id = ships_not_in_ships = 0
+    out_of_lifecycle: list[dict] = []
+    for fleet in fleets:
+        fleet_id = fleet.get("fleet_id")
+        for member in fleet.get("ships", []):
+            td_id = member.get("td_id")
+            if td_id is None:
+                ships_without_td_id += 1
+                continue
+            ship = ships_by_id.get(td_id)
+            if ship is None:
+                ships_not_in_ships += 1
+                continue
+            cited = {row.get("fleet_id") for row in ship.get("fleets", [])}
+            if fleet_id not in cited:
+                fleet_ship_not_in_ship_fleets.append({"fleet_id": fleet_id, "ship_id": td_id})
+            launched, last = _lifecycle_bounds(ship)
+            for field in ("joined", "left"):
+                iso = (member.get(field) or {}).get("iso")
+                if iso and ((launched and iso < launched) or (last and iso > last)):
+                    out_of_lifecycle.append(
+                        {"fleet_id": fleet_id, "td_id": td_id, "field": field, "date": iso}
+                    )
+
+    unknown_labels = Counter(label for f in fleets for label in f.get("unknown_labels", []))
+    unknown_sections = Counter(
+        section for f in fleets for section in f.get("unknown_sections", [])
+    )
+    frontier_errors = {
+        status: count
+        for status, count in {**index_counts, **fleet_counts}.items()
+        if status in {"error", "parse_error"} and count
+    }
+
+    return {
+        "count": len(fleets),
+        "index_rows": len(fleet_index),
+        "index_only_ids": sorted(index_ids - set(fleet_by_id)),
+        "fetched_missing_from_index": sorted(set(fleet_by_id) - index_ids),
+        "ship_fleet_not_in_fleet": ship_fleet_not_in_fleet,
+        "fleet_ship_not_in_ship_fleets": fleet_ship_not_in_ship_fleets,
+        "ships_without_td_id": ships_without_td_id,
+        "ships_not_in_ships": ships_not_in_ships,
+        "out_of_lifecycle": out_of_lifecycle,
+        "unknown_labels": dict(unknown_labels.most_common(50)),
+        "unknown_sections": dict(unknown_sections.most_common()),
+        "frontier_errors": frontier_errors,
+    }
+
+
+def _lifecycle_bounds(ship: dict) -> tuple[str | None, str | None]:
+    """A ship's (Launched, last lifecycle) ISO dates, from its lifecycle rows."""
+    dates = [
+        (item.get("label"), (item.get("date") or {}).get("iso"))
+        for item in ship.get("lifecycle", [])
+    ]
+    launched = next((iso for label, iso in dates if label == "Launched" and iso), None)
+    others = [iso for _label, iso in dates if iso]
+    return launched, (max(others) if others else None)
+
+
 def unparseable_dates(ships: list[dict]) -> list[dict]:
     """Date-shaped values the parser could not read, e.g. ``60.1739`` or
     ``36.5.1801``: errors in the source, kept raw and listed for the owner."""
@@ -288,6 +379,28 @@ def render_markdown(report: dict) -> str:
     lines += [
         f"- frontier errors ({kind}): {n}"
         for kind, n in actions["frontier_errors"].items()
+    ] or ["- frontier errors: none"]
+    fleets = report["fleets"]
+    lines += [
+        "",
+        "## Fleets",
+        "",
+        f"- fleets stored: {fleets['count']}",
+        f"- index rows: {fleets['index_rows']}",
+        f"- index ids not fetched: {len(fleets['index_only_ids'])}",
+        f"- fetched ids missing from the index: {len(fleets['fetched_missing_from_index'])}",
+        f"- ship fleets not listing the ship: {len(fleets['ship_fleet_not_in_fleet'])}",
+        f"- fleet ships not in the ship's fleets: "
+        f"{len(fleets['fleet_ship_not_in_ship_fleets'])}",
+        f"- fleet ships with no td_id: {fleets['ships_without_td_id']}",
+        f"- fleet ships not found in ships: {fleets['ships_not_in_ships']}",
+        f"- fleet ships outside the ship's lifecycle: {len(fleets['out_of_lifecycle'])}",
+        f"- unknown labels: {sum(fleets['unknown_labels'].values())}",
+        f"- unknown sections: {sum(fleets['unknown_sections'].values())}",
+    ]
+    lines += [
+        f"- frontier errors ({kind}): {n}"
+        for kind, n in fleets["frontier_errors"].items()
     ] or ["- frontier errors: none"]
     bad = report["unparseable_dates"]
     lines += ["", "## Unparseable dates (errors in the source; worth sending to the owner)", ""]

@@ -71,6 +71,48 @@ def main(argv: list[str] | None = None) -> int:
                             f"ETA {remaining / pph:.1f} h"
                         )
 
+        print(f"fleets stored : {store.fleet_count()}")
+        for kind in ("fleet_index", "fleet"):
+            kind_counts = store.page_counts_by_status(kind)
+            total_kind = sum(kind_counts.values())
+            detail = ", ".join(
+                f"{status}: {n}" for status, n in sorted(kind_counts.items()) if n
+            )
+            print(f"  {kind:<13}: {total_kind} pages" + (f" ({detail})" if detail else ""))
+        fleets_run = store._conn.execute(  # noqa: SLF001 - status script reads raw rows
+            "SELECT * FROM runs WHERE spider = 'fleets' ORDER BY run_id DESC LIMIT 1"
+        ).fetchone()
+        if fleets_run:
+            print(
+                f"last fleets   : started {fleets_run['started_at']} "
+                f"({fleets_run['pages_fetched']} pages fetched from the site, "
+                f"{fleets_run['close_reason']})"
+            )
+            pages = fleets_run["pages_fetched"] or 0
+            if pages and fleets_run["finished_at"]:
+                from datetime import datetime
+
+                fmt = "%Y-%m-%dT%H:%M:%SZ"
+                try:
+                    elapsed = (
+                        datetime.strptime(fleets_run["finished_at"], fmt)
+                        - datetime.strptime(fleets_run["started_at"], fmt)
+                    ).total_seconds()
+                except (TypeError, ValueError):
+                    elapsed = 0
+                if elapsed > 0:
+                    remaining = sum(
+                        n
+                        for status, n in store.page_counts_by_status("fleet").items()
+                        if status in ("pending", "error")
+                    )
+                    pph = pages * 3600 / elapsed
+                    if pph:
+                        print(
+                            f"fleets ETA    : {pph:.0f} pages/hour; "
+                            f"ETA {remaining / pph:.1f} h"
+                        )
+
         last_run = None
         if total:
             rows = store._conn.execute(  # noqa: SLF001 - status script reads raw rows

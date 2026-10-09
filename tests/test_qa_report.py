@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from threedecks.items import (
     ActionRecord,
+    FleetIndexRow,
+    FleetRecord,
+    FleetRow,
+    FleetShip,
     HistoryEvent,
+    LabeledDate,
     Participant,
     ShipRecord,
 )
+from threedecks.parsing.dates import parse_td_date
 from threedecks.state import StateStore
 
 from scripts.qa_report import build_report
@@ -122,3 +128,47 @@ def test_report_lists_history_battles_without_an_action(tmp_path):
 
     report, _ = build_report(tmp_path)
     assert report["actions"]["history_battles_without_action"] == [42]
+
+
+def test_report_reports_fleet_asymmetry_and_out_of_lifecycle(tmp_path):
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_ship(
+        ShipRecord(
+            td_id=1,
+            name="One",
+            url="u1",
+            fleets=[FleetRow(fleet_id=5)],
+            lifecycle=[LabeledDate(label="Launched", text="1.1.1800",
+                                   date=parse_td_date("1.1.1800"))],
+        )
+    )
+    store.save_ship(
+        ShipRecord(
+            td_id=2,
+            name="Two",
+            url="u2",
+            lifecycle=[LabeledDate(label="Launched", text="1.1.1800",
+                                   date=parse_td_date("1.1.1800"))],
+        )
+    )
+    store.save_fleet(
+        FleetRecord(
+            fleet_id=5,
+            name="Five",
+            ships=[FleetShip(td_id=2, ship_label="Two", joined=parse_td_date("1.1.1790"))],
+        )
+    )
+    store.save_fleet_index([FleetIndexRow(fleet_id=5, name="Five")])
+    store.close()
+
+    report, markdown = build_report(tmp_path)
+    fleets = report["fleets"]
+    # Ship 1 cites fleet 5, but fleet 5's ships do not list ship 1.
+    assert fleets["ship_fleet_not_in_fleet"] == [{"ship_id": 1, "fleet_id": 5}]
+    # Fleet 5 lists ship 2, but ship 2's fleets do not cite fleet 5.
+    assert fleets["fleet_ship_not_in_ship_fleets"] == [{"fleet_id": 5, "ship_id": 2}]
+    # Ship 2 was launched in 1800; the fleet joins it in 1790.
+    assert fleets["out_of_lifecycle"] == [
+        {"fleet_id": 5, "td_id": 2, "field": "joined", "date": "1790-01-01"}
+    ]
+    assert "## Fleets" in markdown
