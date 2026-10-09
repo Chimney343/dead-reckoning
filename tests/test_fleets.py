@@ -17,7 +17,6 @@ from threedecks.parsing.fleets import (
 SYNTHETIC = Path(__file__).parent / "fixtures" / "synthetic"
 REAL = Path(__file__).parent / "fixtures" / "real"
 FLEET_URL = "https://threedecks.org/index.php?display_type=show_fleet&id={id}"
-INDEX_URL = "https://threedecks.org/index.php?display_type=show_fleetlist"
 
 requires_real = pytest.mark.skipif(
     not REAL.exists(), reason="tests/fixtures/real/ is absent (run scripts/fetch_fixtures.py)"
@@ -50,6 +49,17 @@ def test_is_fleet_not_found():
 def test_is_fleetlist_index_page():
     assert is_fleetlist_index_page(load(SYNTHETIC, "fleetlist_index.html"))
     assert not is_fleetlist_index_page(load(SYNTHETIC, "fleet_full.html"))
+
+
+def test_is_fleetlist_index_page_rejects_a_bare_show_fleetlist_link():
+    # show_fleet is a prefix of show_fleetlist, so the signature must match exactly.
+    html = (
+        "<html><head><title>Fleets</title></head><body><div id='datacol'>"
+        "<h1>Fleets</h1>"
+        "<a href='index.php?display_type=show_fleetlist'>Fleets</a>"
+        "</div><span id='copywrite_message'>Copyright</span></body></html>"
+    )
+    assert not is_fleetlist_index_page(Selector(text=html))
 
 
 # --- the fleet-list index ---------------------------------------------------

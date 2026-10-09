@@ -116,7 +116,11 @@ def is_fleetlist_index_page(sel) -> bool:
     h1 = root.xpath(".//h1")
     if not h1 or common.visible_text(h1[0]) != "Fleets":
         return False
-    return bool(root.xpath(".//a[contains(@href,'show_fleet')]"))
+    # A bare substring test would also match show_fleetlist (a prefix); match exactly.
+    return any(
+        common.link_kind(anchor.attrib.get("href")) == "show_fleet"
+        for anchor in root.xpath(".//a[@href]")
+    )
 
 
 # --- the fleet-list index ----------------------------------------------------

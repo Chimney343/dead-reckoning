@@ -222,6 +222,10 @@ def build_fleets_report(ships, fleets, fleet_index, index_counts, fleet_counts) 
     fleet_by_id = {f.get("fleet_id"): f for f in fleets}
     index_ids = {row.get("fleet_id") for row in fleet_index if row.get("fleet_id")}
     ships_by_id = {s.get("td_id"): s for s in ships}
+    fleet_members = {
+        fleet_id: {s.get("td_id") for s in fleet.get("ships", [])}
+        for fleet_id, fleet in fleet_by_id.items()
+    }
 
     # Symmetry with ship records: ship X cites fleet F but F's ships lack X.
     ship_fleet_not_in_fleet: list[dict] = []
@@ -230,8 +234,7 @@ def build_fleets_report(ships, fleets, fleet_index, index_counts, fleet_counts) 
             fleet_id = fleet_row.get("fleet_id")
             if fleet_id is None or fleet_id not in fleet_by_id:
                 continue
-            members = {s.get("td_id") for s in fleet_by_id[fleet_id].get("ships", [])}
-            if ship.get("td_id") not in members:
+            if ship.get("td_id") not in fleet_members.get(fleet_id, set()):
                 ship_fleet_not_in_fleet.append(
                     {"ship_id": ship.get("td_id"), "fleet_id": fleet_id}
                 )
@@ -257,7 +260,13 @@ def build_fleets_report(ships, fleets, fleet_index, index_counts, fleet_counts) 
             launched, last = _lifecycle_bounds(ship)
             for field in ("joined", "left"):
                 iso = (member.get(field) or {}).get("iso")
-                if iso and ((launched and iso < launched) or (last and iso > last)):
+                if not iso:
+                    continue
+                # Compare only to the shared precision: fleet dates are often
+                # year-only, and "1798" must not be judged against "1798-08-14".
+                if (launched is not None and _before(iso, launched)) or (
+                    last is not None and _before(last, iso)
+                ):
                     out_of_lifecycle.append(
                         {"fleet_id": fleet_id, "td_id": td_id, "field": field, "date": iso}
                     )
@@ -297,6 +306,12 @@ def _lifecycle_bounds(ship: dict) -> tuple[str | None, str | None]:
     launched = next((iso for label, iso in dates if label == "Launched" and iso), None)
     others = [iso for _label, iso in dates if iso]
     return launched, (max(others) if others else None)
+
+
+def _before(a: str, b: str) -> bool:
+    """Whether ISO ``a`` is strictly before ``b`` at their shared precision."""
+    length = min(len(a), len(b))
+    return a[:length] < b[:length]
 
 
 def unparseable_dates(ships: list[dict]) -> list[dict]:
