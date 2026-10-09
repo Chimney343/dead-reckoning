@@ -7,7 +7,7 @@ from scrapy.exceptions import DropItem, NotConfigured
 from scrapy.http import HtmlResponse, Request
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
-from threedecks.items import ActionRecord, CaptureRow, ShipRecord
+from threedecks.items import ActionRecord, CaptureRow, FleetRecord, ShipRecord
 from threedecks.parsing.dates import parse_td_date
 from threedecks.pipelines import StatePipeline, ValidationPipeline
 from threedecks.state import StateStore
@@ -63,6 +63,24 @@ def test_action_kind_is_registered():
     assert KINDS["action"].parser_version == "1"
 
 
+def test_validation_rejects_fleet_without_id_or_name():
+    pipeline = ValidationPipeline()
+    with pytest.raises(DropItem):
+        pipeline.process_item(FleetRecord(fleet_id=None, name="x"), FakeSpider())
+    with pytest.raises(DropItem):
+        pipeline.process_item(FleetRecord(fleet_id=1, name=""), FakeSpider())
+    valid = FleetRecord(fleet_id=1, name="A Fleet")
+    assert pipeline.process_item(valid, FakeSpider()) is valid
+
+
+def test_fleet_kind_is_registered():
+    import threedecks.kinds_fleets  # noqa: F401  (registers on import)
+    from threedecks.pages import KINDS
+
+    assert KINDS["fleet"].display_type == "show_fleet"
+    assert KINDS["fleet"].parser_version == "1"
+
+
 def test_state_pipeline_upserts_and_marks_done(tmp_path):
     pipeline = StatePipeline.from_crawler(make_crawler(tmp_path))
     spider = FakeSpider()
@@ -107,6 +125,21 @@ def test_state_pipeline_saves_actions(tmp_path):
     store = StateStore(tmp_path / "state.sqlite")
     assert store.action_count() == 1
     assert store.page_status("action", "157") == "done"
+    store.close()
+
+
+def test_state_pipeline_saves_fleets(tmp_path):
+    pipeline = StatePipeline.from_crawler(make_crawler(tmp_path))
+    spider = FakeSpider()
+    pipeline.open_spider(spider)
+    try:
+        pipeline.process_item(FleetRecord(fleet_id=97, name="Saumarez's Squadron 1798"), spider)
+    finally:
+        pipeline.close_spider(spider)
+
+    store = StateStore(tmp_path / "state.sqlite")
+    assert store.fleet_count() == 1
+    assert store.page_status("fleet", "97") == "done"
     store.close()
 
 

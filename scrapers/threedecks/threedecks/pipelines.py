@@ -13,7 +13,7 @@ from pathlib import Path
 
 from scrapy.exceptions import DropItem
 
-from threedecks.items import ActionRecord, CaptureRow, ShipRecord
+from threedecks.items import ActionRecord, CaptureRow, FleetRecord, ShipRecord
 from threedecks.state import StateStore
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,11 @@ class ValidationPipeline:
                 raise DropItem("action record without a battle_id")
             if not item.name:
                 raise DropItem(f"action record {item.battle_id} without a name")
+        elif isinstance(item, FleetRecord):
+            if item.fleet_id is None:
+                raise DropItem("fleet record without a fleet_id")
+            if not item.name:
+                raise DropItem(f"fleet record {item.fleet_id} without a name")
         elif isinstance(item, CaptureRow):
             if not item.date.raw:
                 raise DropItem("capture row without a date")
@@ -65,6 +70,8 @@ class StatePipeline:
             self.store.save_ship(item)
         elif isinstance(item, ActionRecord):
             self.store.save_action(item)
+        elif isinstance(item, FleetRecord):
+            self.store.save_fleet(item)
         elif isinstance(item, CaptureRow):
             self.store.save_capture(item)
         return item
