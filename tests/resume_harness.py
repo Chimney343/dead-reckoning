@@ -285,6 +285,95 @@ def add_action_routes(site, action_ids):
     site.add_post_handler("select_action", serve_action_index_post)
 
 
+FLEET_PAGE = """<!DOCTYPE html>
+<html><head><title>Fleet {fleet_id}</title></head><body>
+<div id="datacol">
+<h1>Fleet {fleet_id}</h1>
+<table class="column8">
+<tr><td class="column2 alpha">Fleet Formed</td><td></td>
+<td class="column1 alpha"><span title="1798">1798</span></td><td></td>
+<td class="source_col column1 omega"><a href="#ref:1">ref:1</a></td></tr>
+</table>
+<table class="column8">
+<thead><tr>
+<th class="shipname_col column2 alpha">Ship</th>
+<th class="column1 alpha">Joined</th>
+<th class="column1 alpha">Left</th>
+<th class="column2 alpha">Commander</th>
+<th class="column2 alpha">Notes</th>
+</tr></thead>
+<tbody>
+<tr><td class="column2 alpha">
+<a href="index.php?display_type=show_ship&amp;id={fleet_id}" class="shiplink">Ship {fleet_id}</a>
+</td><td></td>
+<td class="column1 alpha"><span title="1798">1798</span></td><td></td>
+<td class="column1 alpha"><span title="1798">1798</span></td>
+<td class="column2 alpha">&nbsp;</td><td class="column2 alpha">note</td></tr>
+</tbody>
+</table>
+</div>
+<span id="copywrite_message">Copyright &copy; Cy Harrison</span>
+</body></html>"""
+
+FLEET_NOTFOUND_PAGE = (
+    "<!DOCTYPE html><html><head><title>Fleet details</title></head><body>"
+    "<div id='datacol'><table class='column8'>"
+    "<tr><td class='column2 alpha'>Fleet Formed</td><td></td><td class='column1 alpha'></td></tr>"
+    "<tr><td class='column2 alpha'>Fleet Disbanded</td><td></td>"
+    "<td class='column1 alpha'></td></tr></table></div>"
+    "<span id='copywrite_message'>Copyright &copy; Cy Harrison</span></body></html>"
+)
+
+
+def fleet_index_page(fleet_ids) -> str:
+    """A flat-cell fleet-list index in the 3.1 markup."""
+    cells = "".join(
+        '<td><span title="1798">1798</span></td><td><span title="1798">1798</span></td>'
+        '<td><a href="index.php?display_type=show_nation&amp;id=1">Great Britain</a></td>'
+        f'<td><a href="index.php?display_type=show_fleet&amp;id={i}">Fleet {i}</a></td>'
+        "<td>&nbsp;</td>"
+        for i in fleet_ids
+    )
+    return (
+        "<!DOCTYPE html><html><head><title>Fleets</title></head><body>"
+        "<div id='datacol'><h1>Fleets</h1><table class='column9'><thead>"
+        "<tr><th colspan='6'>Fleets</th></tr>"
+        "<tr><th>Date From</th><th>Date To</th><th>Nationality</th><th>Fleet</th>"
+        "<th>Fleet Commander</th></tr></thead>"
+        f"<tbody>{cells}</tbody></table></div>"
+        "<span id='copywrite_message'>Copyright &copy; Cy Harrison</span></body></html>"
+    )
+
+
+def add_fleet_routes(site, fleet_ids):
+    """Serve the fleet-list index and fleet pages on ``site`` (Task FL7)."""
+    ids = sorted(fleet_ids)
+    site.fleet_block_id: int | None = None
+    site.fleet_block_active = False
+    site.fleet_block_limit: int | None = None
+
+    def serve_fleet_index(h, query):
+        site._count("show_fleetlist", "1")
+        h._send(200, fleet_index_page(ids).encode())
+
+    def serve_fleet(h, query):
+        key = (query.get("id") or ["0"])[0]
+        site._count("show_fleet", key)
+        blocked = site.fleet_block_active and int(key) == site.fleet_block_id
+        if blocked and site.fleet_block_limit is not None:
+            site.fleet_block_limit -= 1
+            site.fleet_block_active = site.fleet_block_limit > 0
+        if blocked:
+            h._send(429, b"<html>Too Many Requests</html>")
+        elif int(key) in ids:
+            h._send(200, FLEET_PAGE.format(fleet_id=int(key)).encode())
+        else:  # a missing fleet id is the "Fleet details" shell, a 200
+            h._send(200, FLEET_NOTFOUND_PAGE.encode())
+
+    site.add_get_handler("show_fleetlist", serve_fleet_index)
+    site.add_get_handler("show_fleet", serve_fleet)
+
+
 def crawl_env(data_dir: Path, base_url: str) -> dict:
     env = os.environ.copy()
     env["THREEDECKS_BASE_URL"] = base_url

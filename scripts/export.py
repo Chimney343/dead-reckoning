@@ -129,6 +129,62 @@ def flatten_participants(record: dict) -> list[dict]:
     return rows
 
 
+def flatten_fleet(record: dict, index_by_id: dict[int, dict]) -> dict:
+    index_row = index_by_id.get(record.get("fleet_id")) or {}
+    return {
+        "fleet_id": record.get("fleet_id"),
+        "name": record.get("name"),
+        "nation_id": index_row.get("nation_id"),
+        "commander_ids": ",".join(str(i) for i in record.get("commander_ids", [])),
+        "formed_iso": _date_field(record.get("formed"), "iso"),
+        "disbanded_iso": _date_field(record.get("disbanded"), "iso"),
+        "ship_count": len(record.get("ships", [])),
+        "event_count": len(record.get("events", [])),
+        "url": record.get("url"),
+        "fetched_at": record.get("fetched_at"),
+        "content_sha256": record.get("content_sha256"),
+        "parser_version": record.get("parser_version"),
+    }
+
+
+def flatten_fleet_ships(record: dict) -> list[dict]:
+    rows: list[dict] = []
+    for ship in record.get("ships", []):
+        link = ship.get("ship") or {}
+        rows.append(
+            {
+                "fleet_id": record.get("fleet_id"),
+                "td_id": ship.get("td_id"),
+                "ship_label": ship.get("ship_label"),
+                "ship_tooltip": " | ".join(link.get("tooltip", [])),
+                "joined_iso": _date_field(ship.get("joined"), "iso"),
+                "left_iso": _date_field(ship.get("left"), "iso"),
+                "commander_ids": ",".join(str(i) for i in ship.get("commander_ids", [])),
+                "notes": ship.get("notes"),
+            }
+        )
+    return rows
+
+
+def flatten_fleet_events(record: dict) -> list[dict]:
+    rows: list[dict] = []
+    for event in record.get("events", []):
+        date = event.get("date") or {}
+        rows.append(
+            {
+                "fleet_id": record.get("fleet_id"),
+                "date_raw": date.get("raw"),
+                "date_iso": date.get("iso"),
+                "text": event.get("text"),
+                "ship_ids": ",".join(str(i) for i in event.get("ship_ids", [])),
+                "place_ids": ",".join(str(i) for i in event.get("place_ids", [])),
+                "battle_ids": ",".join(str(i) for i in event.get("battle_ids", [])),
+                "source_code": event.get("source_code"),
+            }
+        )
+    return rows
+
+
 def write_jsonl(path: Path, records) -> int:
     count = 0
     with path.open("w", encoding="utf-8") as handle:
@@ -163,6 +219,8 @@ def main(argv: list[str] | None = None) -> int:
         captures = list(store.iter_captures())
         actions = list(store.iter_actions())
         action_index = list(store.iter_action_index())
+        fleets = list(store.iter_fleets())
+        fleet_index = list(store.iter_fleet_index())
     finally:
         store.close()
 
@@ -170,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
     write_jsonl(out_dir / "captures.jsonl", captures)
     write_jsonl(out_dir / "actions.jsonl", actions)
     write_jsonl(out_dir / "action_index.jsonl", action_index)
+    write_jsonl(out_dir / "fleets.jsonl", fleets)
+    write_jsonl(out_dir / "fleet_index.jsonl", fleet_index)
     parquet = write_parquet(out_dir / "ships.parquet", [flatten_ship(s) for s in ships])
     write_parquet(out_dir / "captures.parquet", [flatten_capture(c) for c in captures])
     index_by_id = {row.get("battle_id"): row for row in action_index}
@@ -179,9 +239,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     participant_rows = [row for record in actions for row in flatten_participants(record)]
     write_parquet(out_dir / "action_participants.parquet", participant_rows)
+    fleet_index_by_id = {row.get("fleet_id"): row for row in fleet_index}
+    write_parquet(
+        out_dir / "fleets.parquet",
+        [flatten_fleet(record, fleet_index_by_id) for record in fleets],
+    )
+    fleet_ship_rows = [row for record in fleets for row in flatten_fleet_ships(record)]
+    write_parquet(out_dir / "fleet_ships.parquet", fleet_ship_rows)
+    fleet_event_rows = [row for record in fleets for row in flatten_fleet_events(record)]
+    write_parquet(out_dir / "fleet_events.parquet", fleet_event_rows)
     print(
-        f"exported {len(ships)} ships, {len(captures)} captures and {len(actions)} actions "
-        f"to {out_dir}"
+        f"exported {len(ships)} ships, {len(captures)} captures, {len(actions)} actions and "
+        f"{len(fleets)} fleets to {out_dir}"
         + ("" if parquet else " (Parquet skipped: pandas/pyarrow unavailable)")
     )
     return 0
