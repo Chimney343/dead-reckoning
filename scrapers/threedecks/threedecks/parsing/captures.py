@@ -16,10 +16,29 @@ from threedecks.parsing.dates import parse_td_date
 
 _ROWS = ".//table[@id='capture_list']//tr"
 _VISIBLE = ".//text()[not(ancestor::span[contains(@class,'tooltiptext')])]"
+_FROM_NATIONS = "//select[@id='select_from_nation']/option/@value"
 
 
 def _norm(texts: list[str]) -> str:
     return re.sub(r"\s+", " ", " ".join(texts)).strip()
+
+
+def parse_capture_nations(selector: Selector) -> list[int]:
+    """The "Taken from" nation ids in the captures form, in form order.
+
+    The placeholder option (value 0, "Please Select...") is dropped: the form
+    requires at least one nation, so it is the list of queries that together
+    return every capture. Values keep their first-seen order and are unique.
+    """
+    nations: list[int] = []
+    for value in selector.xpath(_FROM_NATIONS).getall():
+        try:
+            nation_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if nation_id > 0 and nation_id not in nations:
+            nations.append(nation_id)
+    return nations
 
 
 def _visible_text(cell) -> str:

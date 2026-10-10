@@ -48,8 +48,30 @@ def make_with_crawler(spider_cls, monkeypatch, tmp_path):
 # --- captures --------------------------------------------------------------
 
 
-def test_captures_issues_one_form_post(tmp_path):
+def test_captures_default_reads_the_form_first(tmp_path):
     spider = make(CapturesSpider, tmp_path)
+    requests = list(spider.start_requests())
+    spider.closed("test")
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert "display_type=select_capture" in requests[0].url
+
+
+def test_captures_enumerates_every_nation_from_the_form(tmp_path):
+    spider = make(CapturesSpider, tmp_path)
+    response = response_for(
+        "captures_form.html", "https://threedecks.org/index.php?display_type=select_capture"
+    )
+    produced = list(spider.parse_nations(response))
+    spider.closed("test")
+    requests = [p for p in produced if isinstance(p, FormRequest)]
+    assert len(requests) == 3
+    assert [parse_qs(r.body.decode())["select_from_nation"][0] for r in requests] == ["7", "1", "4"]
+    assert {parse_qs(r.body.decode())["select_by_nation"][0] for r in requests} == {"0"}
+
+
+def test_captures_restricted_issues_one_form_post(tmp_path):
+    spider = make(CapturesSpider, tmp_path, from_nation=7, by_nation=1)
     requests = list(spider.start_requests())
     spider.closed("test")
     assert len(requests) == 1
@@ -63,7 +85,11 @@ def test_captures_issues_one_form_post(tmp_path):
 
 def test_captures_parse_yields_rows_and_unique_ship_requests(tmp_path):
     spider = make(CapturesSpider, tmp_path)
-    response = response_for("captures.html", "https://threedecks.org/index.php?display_type=select_capture")
+    response = response_for(
+        "captures.html",
+        "https://threedecks.org/index.php?display_type=select_capture",
+        meta={"query": {"from_nation_id": 7, "by_nation_id": 0, "war_id": None}},
+    )
     produced = list(spider.parse_captures(response))
     spider.closed("test")
 
@@ -317,12 +343,17 @@ def test_parser_exception_marks_parse_error_and_moves_on(monkeypatch, tmp_path):
 
 def test_captures_list_replaces_the_rows_of_its_query(tmp_path):
     # Keys changed format in parser 2; a re-parse must not leave the old rows behind.
-    spider = make(CapturesSpider, tmp_path)
+    spider = make(CapturesSpider, tmp_path, from_nation=7, by_nation=1)
     with spider.store._conn:  # noqa: SLF001
         spider.store._conn.execute(  # noqa: SLF001
             "INSERT INTO captures VALUES ('7|1|None|13269|1804/12/07', '{}')"
         )
-    list(spider.parse_captures(response_for("captures.html")))
+    response = response_for(
+        "captures.html",
+        "https://threedecks.org/index.php?display_type=select_capture",
+        meta={"query": {"from_nation_id": 7, "by_nation_id": 1, "war_id": None}},
+    )
+    list(spider.parse_captures(response))
     assert spider.store.capture_count() == 0  # the pipeline re-saves the new rows
     spider.closed("test")
 

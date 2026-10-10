@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>View lists of captured vessels</title></head>
+<body>
+<div id="datacol">
+  <form id="capture_filter" method="post">
+    <fieldset><legend>Captured vessels list</legend>
+      <label for="select_from_nation">Taken from</label>
+      <select name="select_from_nation" id="select_from_nation">
+        <option value="0">Please Select...</option>
+        <option value="7">Spain</option>
+        <option value="1">Great Britain</option>
+        <option value="4">France</option>
+      </select>
+      <label for="select_by_nation">Taken by</label>
+      <select name="select_by_nation" id="select_by_nation">
+        <option value="0">Please Select...</option>
+        <option value="7">Spain</option>
+        <option value="1">Great Britain</option>
+        <option value="4">France</option>
+      </select>
+      <input type="submit" name="select_captures" id="select_captures" value="Change Filter" />
+    </fieldset>
+  </form>
+</div>
+</body>
+</html>

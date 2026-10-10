@@ -422,6 +422,17 @@ class StateStore:
                 (capture_key(row), payload),
             )
 
+    def clear_all_captures(self) -> int:
+        """Drop every capture row, before a full crawl re-saves the whole list.
+
+        An all-nations run replaces the narrower query rows (for example the old
+        Spain -> Great Britain snapshot), which per-query clearing would leave
+        behind as duplicates under a different query key.
+        """
+        with self._conn:
+            cur = self._conn.execute("DELETE FROM captures")
+        return cur.rowcount
+
     def clear_captures(self, from_nation_id, by_nation_id, war_id) -> int:
         """Drop one query's capture rows before it is re-saved, so stale keys go."""
         prefix = f"{from_nation_id}|{by_nation_id}|{war_id}|"

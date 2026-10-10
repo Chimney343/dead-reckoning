@@ -4,9 +4,9 @@
                                    [--tiers captures,ships_by_nation,ships_all] [--rerun]
                                    [--allow-sleep] [-s KEY=VALUE ...]
 
-Runs Tier A (``captures``: Spanish ships taken by Britain), then Tier B
-(``ships_by_nation``: every Spanish ship), then Tier C (``ships_all``: every
-ship id), each as a normal ``scrapy crawl``, so the 5 s rate, the Cloudflare
+Runs Tier A (``captures``: every captured vessel, one query per nation), then
+Tier B (``ships_by_nation``: every Spanish ship), then Tier C (``ships_all``:
+every ship id), each as a normal ``scrapy crawl``, so the 5 s rate, the Cloudflare
 cool-offs and resuming all apply. A tier ends when its list is exhausted or the
 database holds ``--ships`` ship records (``THREEDECKS_SHIP_TARGET``). A tier
 whose last run finished is skipped (``--rerun`` replays it from the cache).

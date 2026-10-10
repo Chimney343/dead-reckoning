@@ -2,8 +2,9 @@
 
     uv run python scripts/smoke.py [--pages 25 | --ships 100] [-s KEY=VALUE ...]
 
-Runs the plan's Smoke tier: the captures spider for Spain -> Great Britain, at
-the normal 5 s rate. By default it closes after ``--pages`` responses
+Runs the plan's Smoke tier: one captures query, Spain -> Great Britain, at the
+normal 5 s rate. (A full captures crawl enumerates every nation, which is far too
+slow to smoke.) By default it closes after ``--pages`` responses
 (robots.txt and the captures POST count), about 3 minutes; ``--ships N`` closes
 after N ship records instead (about 7 s per ship). It passes when the crawl was not
 blocked, every item validated, no page failed to fetch or parse, at least one
@@ -35,6 +36,8 @@ from threedecks.politeness import parse_override, refusal_message, refused_overr
 from threedecks.ua import MISSING_CONTACT_HELP, contact
 
 SPIDER = "captures"
+SMOKE_FROM_NATION = 7   # Spain
+SMOKE_BY_NATION = 1     # Great Britain
 SHIP_LIMIT_REASON = "smoke_ship_limit"
 OK_REASONS = {"finished", "closespider_pagecount", SHIP_LIMIT_REASON}
 
@@ -159,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             crawler = process.create_crawler(SPIDER)
             tally = ItemTally(crawler, ship_limit=args.ships)
             crawler.signals.connect(tally.on_item_scraped, signal=signals.item_scraped)
-            process.crawl(crawler)
+            process.crawl(crawler, from_nation=SMOKE_FROM_NATION, by_nation=SMOKE_BY_NATION)
             process.start()
     except CrawlLockHeld as held:
         print(f"another crawl holds {data_dir} (pid {held.pid}, started {held.started}); "

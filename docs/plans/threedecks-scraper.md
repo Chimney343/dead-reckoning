@@ -54,6 +54,7 @@ Pages examined: robots.txt, `siteindex.xml`, `ships.xml`, data definitions, ship
 - **Sitemap:** `ships.xml` lists 25,300 unique ship IDs (min 1, max 28,756) and has no lastmod per URL. The index's lastmod is 2019-01-24, while the homepage claims about 30,984 ships, so the sitemap is stale and incomplete.
 - **Captures index:** POST `index.php?display_type=select_capture` with `select_from_nation`, `select_by_nation`, `select_war` and `select_captures=Change Filter`.
   - Spain (7) → Great Britain (1) returns **361 rows** dated 1704 to 1830, in one 281 KB response that takes about 8 s.
+  - **There is no single "all" query.** With neither nation selected (both 0) the form returns an empty list, and a war filter alone does not help, so the whole list is collected by reading the form's "Taken from" nations and POSTing one query per nation (`from_nation=N`, `by_nation=0`). The form lists 79 options including the placeholder: 78 nations. Spain alone (`from=7, by=0`) returns **396 rows**; Great Britain (`from=1, by=0`) returns **1,001 rows** in a 702 KB, ~17 s response (recon 2026-10-10). The `captures` spider does this by default; `from_nation`/`by_nation` restrict it to one query (the smoke test uses Spain → Great Britain).
   - Columns: date, captured ship (`a.shiplink`), and captor ship(s) followed by `. Place text`.
   - 22 rows have no captor ship link, only free text such as "Taken by the British".
 - **Ship search:** POST `index.php?display_type=ships_search` with `show_shiplist=1`, `page`, `limit` (default 50), `select_nation` (Spain=7, Great Britain=1, France=4) and `sel_origin` (3=Captured, 9=Captured on the Stocks), plus name, rate, type, yard and date filters.
@@ -237,8 +238,8 @@ Throughput is about 7.7 s per page (a 5-7 s delay, 6 s on average, plus about 1.
 
 | Tier | Seeds | Follows | Size / time |
 |---|---|---|---|
-| Smoke | captures ES→GB | none, cap 25 | 25 pages, ~3 min |
-| A | captures ES→GB (1 POST) | captured and captor ships, then `Previously`/`Becomes` to depth 1 | ~590 ship IDs + incarnations ≈ 900 pages, ~1.7 h |
+| Smoke | captures ES→GB (one restricted POST) | none, cap 25 | 25 pages, ~3 min |
+| A | captures, one POST per "Taken from" nation (78, plus 1 GET of the form) | captured and captor ships, then `Previously`/`Becomes` to depth 1 | every captured and captor ship + incarnations |
 | B (optional) | search `select_nation=7` (all Spanish ships), plus search `select_nation=1&sel_origin=3` (British ships acquired by capture) | incarnations to depth 2 | count read from the search header in Phase 1 |
 | C | every ship ID: the 25,300 in `ships.xml`, then every other ID up to the highest known one (the sitemap's 28,756, or higher if an earlier tier found one: Tier A finds IDs above 34,000), then upward until 200 consecutive not-found responses | none (every ID is seeded) | ~31,000 to 33,000 pages, ~2.5 days |
 

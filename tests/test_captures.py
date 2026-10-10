@@ -6,10 +6,15 @@ from pathlib import Path
 
 import pytest
 from parsel import Selector
-from threedecks.parsing.captures import parse_captures
+from threedecks.parsing.captures import parse_capture_nations, parse_captures
 
 FIXTURES = Path(__file__).parent / "fixtures" / "synthetic"
 QUERY = {"from_nation_id": 7, "by_nation_id": 1, "war_id": None}
+
+
+def test_parses_the_taken_from_nations_from_the_form():
+    selector = Selector((FIXTURES / "captures_form.html").read_text(encoding="utf-8"))
+    assert parse_capture_nations(selector) == [7, 1, 4]  # placeholder 0 dropped
 
 
 @pytest.fixture

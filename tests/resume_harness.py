@@ -46,6 +46,21 @@ CAPTURES_ROW = (
     "Ship {td_id}</a></td><td>Taken by the British</td></tr>"
 )
 
+# The captures form the spider reads to learn every "Taken from" nation.
+CAPTURES_FORM = (
+    "<!DOCTYPE html><html><head><title>View lists of captured vessels</title></head>"
+    "<body><div id='datacol'><form id='capture_filter'>"
+    "<select name='select_from_nation' id='select_from_nation'>"
+    "<option value='0'>Please Select...</option>"
+    "<option value='7'>Spain</option>"
+    "<option value='1'>Great Britain</option>"
+    "</select>"
+    "<select name='select_by_nation' id='select_by_nation'>"
+    "<option value='0'>Please Select...</option>"
+    "</select>"
+    "</form></div></body></html>"
+)
+
 NOT_FOUND_PAGE = (
     "<!DOCTYPE html><html><head><title>Find a ship</title></head>"
     "<body><div id='datacol'></div></body></html>"
@@ -72,7 +87,10 @@ class FakeSite:
 
         # display_type -> handler. Each Part B adds its own handlers with
         # add_get_handler / add_post_handler, never by editing these.
-        self.get_handlers: dict[str, Callable] = {"show_ship": self._serve_ship}
+        self.get_handlers: dict[str, Callable] = {
+            "show_ship": self._serve_ship,
+            "select_capture": self._serve_captures_form,
+        }
         self.post_handlers: dict[str, Callable] = {"select_capture": self._serve_captures}
 
         outer = self
@@ -158,6 +176,11 @@ class FakeSite:
             h._send(200, SHIP_PAGE.format(td_id=td_id).encode())
         else:
             h._send(200, NOT_FOUND_PAGE.encode())
+
+    def _serve_captures_form(self, h, query):
+        # The captures form: the spider reads its "Taken from" nations, then POSTs.
+        self._count("select_capture", "form")
+        h._send(200, CAPTURES_FORM.encode())
 
     def _serve_captures(self, h, query, body):
         # The captures form lists every ship id as captured (no captor link).
