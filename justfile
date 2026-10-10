@@ -74,6 +74,13 @@ threedecks-crawl-2000 *args:
 threedecks-crawl-all *args:
     uv run python scripts/crawl_all.py {{ args }}
 
+# Scrape every Three Decks tier: ships to the end (crawl-all), then all actions, then all fleets.
+# Stops on a block like crawl-all; rerun to resume. Shared crawl flags (--allow-sleep, --daily-pages, --window, -s ...) pass through to each phase
+threedecks-everything *args:
+    uv run python scripts/crawl_all.py {{ args }}
+    uv run python scripts/crawl.py --tiers actions {{ args }}
+    uv run python scripts/crawl.py --tiers fleets {{ args }}
+
 # Rebuild the ship-losses analysis (extract, geocode, ownership, dedupe, map); extra args pass through
 ship-losses *args:
     uv run --extra analysis python analyses/01-ship-losses/build.py {{ args }}
