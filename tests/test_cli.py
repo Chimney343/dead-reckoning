@@ -47,6 +47,49 @@ def test_get_dry_run_makes_no_network(monkeypatch, capsys):
     assert cli.main(["get", "--dry-run", "--id", "a"]) == 0
     out = capsys.readouterr().out
     assert "a" in out
+    assert "needs DR_CONTACT" not in out
+
+
+def test_get_lists_sources_and_flags_contact(monkeypatch, capsys):
+    entries = sample_entries() + [
+        Entry(
+            id="w",
+            group="captures",
+            title="Wiki lists",
+            resolver="wikipedia",
+            url="https://en.wikipedia.org/w/api.php",
+            licence="CC-BY-SA-4.0",
+            tier="T3",
+            status="verified",
+            params={"wiki": "en", "titles": ["List of naval battles"]},
+        )
+    ]
+    monkeypatch.setattr(cli.manifest, "load_manifest", lambda: entries)
+    monkeypatch.setattr(cli.core, "resolve_contact", lambda: "me@example.org")
+    assert cli.main(["get", "--dry-run", "--id", "a", "--id", "w"]) == 0
+    out = capsys.readouterr().out
+    assert "2 source(s) to download" in out
+    assert "[needs DR_CONTACT]" in out
+
+
+def test_get_warns_when_a_needed_contact_is_unset(monkeypatch, capsys):
+    entries = sample_entries() + [
+        Entry(
+            id="w",
+            group="captures",
+            title="Wiki lists",
+            resolver="wikipedia",
+            url="https://en.wikipedia.org/w/api.php",
+            licence="CC-BY-SA-4.0",
+            tier="T3",
+            status="verified",
+            params={"wiki": "en", "titles": ["List of naval battles"]},
+        )
+    ]
+    monkeypatch.setattr(cli.manifest, "load_manifest", lambda: entries)
+    monkeypatch.setattr(cli.core, "resolve_contact", lambda: None)
+    assert cli.main(["get", "--dry-run", "--id", "w"]) == 2
+    assert "will be refused: w" in capsys.readouterr().out
 
 
 def test_manual_lists_instructions(monkeypatch, capsys):

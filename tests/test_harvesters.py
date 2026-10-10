@@ -31,6 +31,17 @@ def read(path: Path):
     return path.read_text(encoding="utf-8")
 
 
+# --- contact requirements -------------------------------------------------
+
+
+def test_requires_contact_only_for_contact_harvesters():
+    assert harvesters.requires_contact("wikipedia") is True
+    assert harvesters.requires_contact("wikidata") is True
+    assert harvesters.requires_contact("prizepapers") is False
+    assert harvesters.requires_contact("todoababor") is False
+    assert harvesters.requires_contact("direct") is False
+
+
 # --- todoababor -----------------------------------------------------------
 
 

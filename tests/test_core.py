@@ -22,13 +22,31 @@ def test_resolve_contact_reads_environment(monkeypatch):
 
 def test_resolve_contact_reads_dotenv(tmp_path, monkeypatch):
     monkeypatch.delenv("DR_CONTACT", raising=False)
+    monkeypatch.delenv("THREEDECKS_CONTACT", raising=False)
     env = tmp_path / ".env"
     env.write_text('DR_CONTACT="dotenv@example.org"\n', encoding="utf-8")
     assert core.resolve_contact(dotenv_path=env) == "dotenv@example.org"
 
 
+def test_resolve_contact_falls_back_to_threedecks_contact_in_dotenv(tmp_path, monkeypatch):
+    monkeypatch.delenv("DR_CONTACT", raising=False)
+    monkeypatch.delenv("THREEDECKS_CONTACT", raising=False)
+    env = tmp_path / ".env"
+    env.write_text("THREEDECKS_CONTACT=owner@example.org\n", encoding="utf-8")
+    assert core.resolve_contact(dotenv_path=env) == "owner@example.org"
+
+
+def test_resolve_contact_prefers_environment_over_dotenv(tmp_path, monkeypatch):
+    monkeypatch.delenv("THREEDECKS_CONTACT", raising=False)
+    monkeypatch.setenv("DR_CONTACT", "env@example.org")
+    env = tmp_path / ".env"
+    env.write_text("THREEDECKS_CONTACT=file@example.org\n", encoding="utf-8")
+    assert core.resolve_contact(dotenv_path=env) == "env@example.org"
+
+
 def test_resolve_contact_none_when_unset(tmp_path, monkeypatch):
     monkeypatch.delenv("DR_CONTACT", raising=False)
+    monkeypatch.delenv("THREEDECKS_CONTACT", raising=False)
     assert core.resolve_contact(dotenv_path=tmp_path / "missing.env") is None
 
 

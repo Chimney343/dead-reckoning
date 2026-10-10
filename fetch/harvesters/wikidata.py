@@ -15,6 +15,8 @@ from .. import core
 from ..manifest import Entry
 from .base import file_record, save_json
 
+REQUIRES_CONTACT = True
+
 SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 ENTITY_ENDPOINT = "https://www.wikidata.org/w/api.php"
 BATCH = 50

@@ -70,8 +70,6 @@ def cmd_list(entries, args) -> int:
 
 def cmd_get(entries, args) -> int:
     contact = core.resolve_contact()
-    if contact is None:
-        print("note: DR_CONTACT is unset; harvesters that need a contact will refuse to run.")
     groups = set(args.group) if args.group else None
     ids = set(args.ids) if args.ids else None
     with core.HttpClient(contact=contact) as client:

@@ -15,6 +15,8 @@ from .. import core
 from ..manifest import Entry
 from .base import file_record, safe_stem, save_json
 
+REQUIRES_CONTACT = True
+
 
 def _title_years(title: str) -> set[int]:
     return {int(y) for y in re.findall(r"(\d{4})s?", title)}

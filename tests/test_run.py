@@ -94,6 +94,25 @@ def test_fetch_entries_filters(tmp_path, client):
     assert not (tmp_path / "a").exists()
 
 
+def test_plan_lines_lists_sources_and_flags_contact():
+    entries = [make_entry(id="direct"), make_entry(id="wiki", resolver="wikipedia")]
+    text = "\n".join(run.plan_lines(entries, contact="me@example.org"))
+    assert "2 source(s) to download" in text
+    assert "[needs DR_CONTACT]" in text
+    assert "no contact set" not in text
+
+
+def test_plan_lines_warns_when_contact_missing():
+    entries = [make_entry(id="direct"), make_entry(id="wiki", resolver="wikipedia")]
+    text = "\n".join(run.plan_lines(entries, contact=None))
+    assert "no contact set" in text
+    assert "will be refused: wiki" in text
+
+
+def test_plan_lines_empty_selection():
+    assert run.plan_lines([], contact=None) == ["nothing to download"]
+
+
 def test_extract_entry_unpacks_zip(tmp_path):
     entry = make_entry(id="a")
     dest = tmp_path / "a"

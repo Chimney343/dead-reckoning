@@ -51,16 +51,28 @@ def load_dotenv(path: Path) -> dict[str, str]:
     return values
 
 
+CONTACT_KEYS = ("DR_CONTACT", "THREEDECKS_CONTACT")
+
+
 def resolve_contact(
     environ: dict[str, str] | None = None,
     dotenv_path: Path | str = ".env",
 ) -> str | None:
-    """Return DR_CONTACT from the environment, then from a gitignored ``.env``."""
+    """Return the project contact for the User-Agent.
+
+    ``DR_CONTACT`` is the fetch-facing name, but the older
+    ``THREEDECKS_CONTACT`` is accepted too, so the single contact in the
+    gitignored ``.env`` serves both the crawler and the fetcher. The process
+    environment wins over the file.
+    """
     environ = os.environ if environ is None else environ
-    contact = environ.get("DR_CONTACT")
-    if contact:
-        return contact
-    return load_dotenv(Path(dotenv_path)).get("DR_CONTACT")
+    dotenv = load_dotenv(Path(dotenv_path))
+    for source in (environ, dotenv):
+        for key in CONTACT_KEYS:
+            value = source.get(key)
+            if value:
+                return value
+    return None
 
 
 def build_user_agent(contact: str | None) -> str:
@@ -73,7 +85,8 @@ def require_contact(contact: str | None) -> str:
     if not contact:
         raise MissingContactError(
             "DR_CONTACT is not set. Wikimedia requires a contact in the "
-            "User-Agent; set DR_CONTACT in the environment or in .env."
+            "User-Agent; set DR_CONTACT (or THREEDECKS_CONTACT) in the "
+            "environment or in .env."
         )
     return contact
 

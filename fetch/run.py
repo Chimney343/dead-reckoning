@@ -71,6 +71,30 @@ def fetch_entry(
     return {"id": entry.id, "status": entry.status, "files": files}
 
 
+def plan_lines(entries: list[manifest.Entry], contact: str | None) -> list[str]:
+    """Describe the sources a run will download, one line each.
+
+    Harvesters that need a contact are flagged so the operator can set one
+    before the run hits a refusal.
+    """
+    if not entries:
+        return ["nothing to download"]
+    lines = [f"{len(entries)} source(s) to download:"]
+    needing: list[str] = []
+    for entry in entries:
+        contact_needed = harvesters.requires_contact(entry.resolver)
+        flag = "  [needs DR_CONTACT]" if contact_needed else ""
+        lines.append(f"  {entry.id:32} {entry.group:9} {entry.status:8}{flag}")
+        if contact_needed:
+            needing.append(entry.id)
+    if needing and not contact:
+        lines.append(
+            "note: no contact set (DR_CONTACT or THREEDECKS_CONTACT); "
+            "will be refused: " + ", ".join(needing)
+        )
+    return lines
+
+
 def fetch_entries(
     entries: list[manifest.Entry],
     client: core.HttpClient,
@@ -84,6 +108,9 @@ def fetch_entries(
     log=print,
 ) -> list[dict]:
     selected = manifest.select(entries, groups=groups, ids=ids, include_large=include_large)
+    to_fetch = [e for e in selected if e.status not in {"manual", "skip"}]
+    for line in plan_lines(to_fetch, client.contact):
+        log(line)
     results = []
     for entry in selected:
         if entry.status in {"manual", "skip"}:
