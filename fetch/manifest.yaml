@@ -83,8 +83,8 @@
   params:
     wiki: es
     titles:
-      - "Anexo:Navios de linea de la Armada Espanola"
-      - "Anexo:Fragatas a vela de la Armada Espanola"
+      - "Anexo:Navíos de línea de la Armada Española"
+      - "Anexo:Fragatas a vela de la Armada Española"
 
 - id: todo-a-babor
   group: captures

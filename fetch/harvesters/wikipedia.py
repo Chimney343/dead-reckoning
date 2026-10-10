@@ -17,6 +17,32 @@ from .base import file_record, safe_stem, save_json
 
 REQUIRES_CONTACT = True
 
+# MediaWiki serves at most 50 titles per query to clients without the
+# apihighlimits right: longer lists are silently truncated, and the URL of a
+# 400-title query is rejected outright by the edge (HTTP 431).
+TITLE_BATCH = 50
+
+
+def _api_json(response) -> dict:
+    """Decode a MediaWiki API response, turning failures into DownloadError."""
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        snippet = " ".join(response.text[:120].split())
+        raise core.DownloadError(
+            f"{response.status_code} from {response.url}: not JSON"
+            + (f" ({snippet})" if snippet else "")
+        ) from exc
+    if isinstance(payload, dict) and "error" in payload:
+        error = payload["error"]
+        if isinstance(error, dict):
+            raise core.DownloadError(
+                f"{response.url}: MediaWiki error {error.get('code')}: "
+                f"{error.get('info')}"
+            )
+        raise core.DownloadError(f"{response.url}: MediaWiki error {error}")
+    return payload
+
 
 def _title_years(title: str) -> set[int]:
     return {int(y) for y in re.findall(r"(\d{4})s?", title)}
@@ -36,44 +62,74 @@ def _in_period(title: str, min_year: int | None, max_year: int | None) -> bool:
 
 
 def discover_titles(client, api: str, params: dict) -> list[str]:
-    response = client.get(
-        api,
-        params={
+    """Mainspace category members, following cmcontinue until exhausted.
+
+    One categorymembers query returns at most 500 members; categories are
+    routinely larger, so the continuation token must be followed or pages
+    are silently missed.
+    """
+    titles: list[str] = []
+    cmcontinue: str | None = None
+    while True:
+        request = {
             "action": "query",
             "list": "categorymembers",
             "cmtitle": params["category"],
             "cmlimit": "500",
             "format": "json",
             "formatversion": "2",
-        },
-    )
-    members = response.json().get("query", {}).get("categorymembers", [])
-    titles = [m["title"] for m in members if m.get("ns") == 0]
+        }
+        if cmcontinue:
+            request["cmcontinue"] = cmcontinue
+        payload = _api_json(client.get(api, params=request))
+        members = payload.get("query", {}).get("categorymembers", [])
+        titles.extend(m["title"] for m in members if m.get("ns") == 0)
+        cmcontinue = (payload.get("continue") or {}).get("cmcontinue")
+        if not cmcontinue:
+            break
+    # dict.fromkeys keeps discovery order and drops duplicates.
     return [
         t
-        for t in titles
+        for t in dict.fromkeys(titles)
         if _in_period(t, params.get("min_year"), params.get("max_year"))
     ]
 
 
 def resolve_titles(client, api: str, titles: list[str]) -> list[str]:
-    if not titles:
-        return []
-    response = client.get(
-        api,
-        params={
-            "action": "query",
-            "titles": "|".join(titles),
-            "redirects": "1",
-            "format": "json",
-            "formatversion": "2",
-        },
-    )
-    pages = response.json().get("query", {}).get("pages", {})
-    if isinstance(pages, dict):
-        ordered = sorted(pages.values(), key=lambda p: p.get("pageid", 0))
-        return [p["title"] for p in ordered if "title" in p]
-    return [p["title"] for p in pages if "title" in p]
+    """Resolve redirects and normalisations in batches of TITLE_BATCH.
+
+    All titles in one request both overflow the server's 50-title cap and
+    produce URLs long enough for the edge to reject (HTTP 431).
+    """
+    resolved: dict[int, str] = {}  # target pageid -> canonical title
+    missing: list[str] = []  # nonexistent targets carry no pageid
+    for start in range(0, len(titles), TITLE_BATCH):
+        batch = titles[start : start + TITLE_BATCH]
+        payload = _api_json(
+            client.get(
+                api,
+                params={
+                    "action": "query",
+                    "titles": "|".join(batch),
+                    "redirects": "1",
+                    "format": "json",
+                    "formatversion": "2",
+                },
+            )
+        )
+        pages = payload.get("query", {}).get("pages", {})
+        if isinstance(pages, dict):  # formatversion 1 keys pages by pageid
+            pages = list(pages.values())
+        for page in pages:
+            if "title" not in page:
+                continue
+            if "pageid" in page:
+                # Two requested titles can redirect to the same target page.
+                resolved[page["pageid"]] = page["title"]
+            else:
+                missing.append(page["title"])
+    ordered = [title for _, title in sorted(resolved.items())]
+    return ordered + missing
 
 
 def harvest(
@@ -128,7 +184,7 @@ def harvest(
                 "redirects": "1",
             },
         )
-        parse = response.json().get("parse", {})
+        parse = _api_json(response).get("parse", {})
         payload = {
             "title": parse.get("title", title),
             "revid": parse.get("revid"),

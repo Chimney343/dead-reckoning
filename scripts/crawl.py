@@ -42,6 +42,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from threedecks.crawl_view import CrawlView
 from threedecks.extensions import HEARTBEAT_FILE, SHIP_TARGET_REASON
 from threedecks.lock import CrawlLock, CrawlLockHeld
 from threedecks.politeness import parse_override, refusal_message, refused_overrides
@@ -80,30 +81,53 @@ PENDING_REBOOT_KEYS = (
 
 
 class Log:
-    """Print to the console and append to the session's log file."""
+    """Print to the console and append to the session's log file.
+
+    The file always gets every line. With a view attached (a terminal), the
+    console shows a progress bar and only the latest ordinary message; see
+    ``threedecks.crawl_view``.
+    """
 
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
         self._file = path.open("a", encoding="utf-8")
         self._lock = threading.Lock()
+        self.view: CrawlView | None = None
 
-    def write(self, text: str) -> None:
+    def write(self, text: str, kind: str = "plain") -> None:
         with self._lock:
-            sys.stdout.write(text)
-            sys.stdout.flush()
+            if self.view is not None:
+                self.view.show(text, kind)
+            else:
+                sys.stdout.write(text)
+                sys.stdout.flush()
             self._file.write(text)
             self._file.flush()
 
     def say(self, message: str) -> None:
-        self.write(f"[crawl {time.strftime('%H:%M:%S')}] {message}\n")
+        self.write(f"[crawl {time.strftime('%H:%M:%S')}] {message}\n", kind="say")
 
     def tee(self, stream) -> None:
         """Copy a child's output, line by line, until it closes."""
         for raw in iter(stream.readline, b""):
-            self.write(raw.decode("utf-8", "replace").replace("\r\n", "\n"))
+            self.write(raw.decode("utf-8", "replace").replace("\r\n", "\n"), kind="child")
+
+    def start_tier(self, spider: str, ship_target: int, heartbeat) -> None:
+        if self.view is not None:
+            self.view.start_tier(spider, ship_target, heartbeat)
+
+    def tick(self) -> None:
+        if self.view is not None:
+            self.view.tick()
+
+    def end_tier(self) -> None:
+        if self.view is not None:
+            self.view.end_tier()
 
     def close(self) -> None:
+        if self.view is not None:
+            self.view.close()
         self._file.close()
 
 
@@ -396,6 +420,9 @@ def run_tier(spider: str, target: int | None, overrides: dict[str, str], data_di
     copier.start()
     result = TierResult(code=None)
     watchdog = Watchdog(time.time(), stall_secs)
+    log.start_tier(
+        spider, (target or 0) if spider in TIERS else 0, lambda: read_heartbeat(data_dir, token)
+    )
     next_look = time.time() + watch_secs
     while result.code is None:
         try:
@@ -408,6 +435,7 @@ def run_tier(spider: str, target: int | None, overrides: dict[str, str], data_di
             result.interrupted = True
             log.say("stopping: Scrapy is finishing the page in flight ...")
             continue
+        log.tick()
         now = time.time()
         if now < next_look or result.interrupted:
             continue
@@ -425,6 +453,7 @@ def run_tier(spider: str, target: int | None, overrides: dict[str, str], data_di
             result.code = process.wait()
             result.stalled = True
     copier.join(timeout=5)
+    log.end_tier()
     return result
 
 
@@ -440,6 +469,7 @@ def wait_minutes(minutes: float, log: Log) -> bool:
     try:
         while time.time() < deadline:
             time.sleep(min(1.0, max(0.0, deadline - time.time())))
+            log.tick()
     except KeyboardInterrupt:
         log.say("stopped while waiting")
         return False
@@ -456,6 +486,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--rerun", action="store_true", help="replay tiers that finished")
     parser.add_argument("--allow-sleep", action="store_true", help="let Windows sleep")
+    parser.add_argument(
+        "--no-progress", action="store_true",
+        help="print every log line instead of a progress bar with the latest message",
+    )
     parser.add_argument(
         "--network-waits", default=NETWORK_WAITS_MIN,
         help="minutes to wait before each retry after the network went down",
@@ -511,6 +545,8 @@ def main(argv: list[str] | None = None) -> int:
     sys.stdout.reconfigure(errors="replace")  # ship names may not fit the console code page
     data_dir = Path(DATA_DIR)
     log = Log(data_dir / "logs" / f"crawl-{time.strftime('%Y%m%d-%H%M%S')}.log")
+    if not args.no_progress:
+        log.view = CrawlView.for_console(data_dir)
     try:
         # One crawl per data dir: a second would fetch the same pending ids and
         # double the rate (see threedecks.lock). The lock covers the whole chain.

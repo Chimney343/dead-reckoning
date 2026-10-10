@@ -10,6 +10,7 @@ import pytest
 import respx
 
 from fetch import core, harvesters
+from fetch.harvesters import wikipedia
 from fetch.manifest import Entry
 
 
@@ -115,6 +116,14 @@ def _wiki_client():
     return core.HttpClient(contact="me@example.org", backoff_base=0.0)
 
 
+def _fast_client():
+    return core.HttpClient(
+        contact="me@example.org",
+        backoff_base=0.0,
+        limiter=core.RateLimiter(default_gap=0.0),
+    )
+
+
 @respx.mock
 def test_wikipedia_requires_contact(tmp_path):
     entry = make_entry(resolver="wikipedia", url="https://en.wikipedia.org/w/api.php",
@@ -170,6 +179,119 @@ def test_wikipedia_discovers_shipwreck_titles_by_year(tmp_path):
     assert (tmp_path / "List_of_shipwrecks_in_1797.json").exists()
     assert (tmp_path / "List_of_shipwrecks_in_the_1700s.json").exists()
     assert not (tmp_path / "List_of_shipwrecks_in_1900.json").exists()
+
+
+@respx.mock
+def test_wikipedia_resolve_titles_batches_at_fifty():
+    seen: list[list[str]] = []
+
+    def responder(request: httpx.Request) -> httpx.Response:
+        titles = request.url.params["titles"].split("|")
+        seen.append(titles)
+        offset = 1000 * len(seen)
+        pages = [{"pageid": offset + i + 1, "title": t} for i, t in enumerate(titles)]
+        return httpx.Response(200, json={"query": {"pages": pages}})
+
+    respx.get("https://en.wikipedia.org/w/api.php").mock(side_effect=responder)
+    titles = [f"List of shipwrecks in {1700 + i}" for i in range(120)]
+    with _fast_client() as client:
+        resolved = wikipedia.resolve_titles(
+            client, "https://en.wikipedia.org/w/api.php", titles
+        )
+    assert [len(batch) for batch in seen] == [50, 50, 20]
+    assert seen[0] == titles[:50]
+    assert seen[1] == titles[50:100]
+    assert seen[2] == titles[100:]
+    assert resolved == titles
+
+
+@respx.mock
+def test_wikipedia_discover_titles_follows_cmcontinue():
+    calls: list[str] = []
+
+    def responder(request: httpx.Request) -> httpx.Response:
+        token = request.url.params.get("cmcontinue") or ""
+        calls.append(token)
+        if not token:
+            return httpx.Response(
+                200,
+                json={
+                    "query": {
+                        "categorymembers": [
+                            {"pageid": 1, "ns": 0, "title": "List of shipwrecks in 1751"},
+                        ]
+                    },
+                    "continue": {"cmcontinue": "page|2"},
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "query": {
+                    "categorymembers": [
+                        {"pageid": 9, "ns": 14,
+                         "title": "Category:Lists of shipwrecks by decade"},
+                        {"pageid": 2, "ns": 0, "title": "List of shipwrecks in 1752"},
+                    ]
+                }
+            },
+        )
+
+    respx.get("https://en.wikipedia.org/w/api.php").mock(side_effect=responder)
+    with _fast_client() as client:
+        found = wikipedia.discover_titles(
+            client,
+            "https://en.wikipedia.org/w/api.php",
+            {
+                "category": "Category:Lists of shipwrecks by year",
+                "min_year": 1650,
+                "max_year": 1860,
+            },
+        )
+    assert calls == ["", "page|2"]
+    assert found == ["List of shipwrecks in 1751", "List of shipwrecks in 1752"]
+
+
+@respx.mock
+def test_wikipedia_non_json_response_is_a_download_error(tmp_path):
+    respx.get("https://en.wikipedia.org/w/api.php").mock(
+        return_value=httpx.Response(
+            431, text="<html><body>Request Header Fields Too Large</body></html>"
+        )
+    )
+    entry = make_entry(
+        resolver="wikipedia",
+        url="https://en.wikipedia.org/w/api.php",
+        params={"wiki": "en", "titles": ["List of naval battles"]},
+    )
+    with _fast_client() as client:
+        with pytest.raises(core.DownloadError) as excinfo:
+            harvesters.HARVESTERS["wikipedia"](
+                entry, client, tmp_path, prior_files={}, force=False, dry_run=False
+            )
+    assert "431" in str(excinfo.value)
+    assert "not JSON" in str(excinfo.value)
+
+
+@respx.mock
+def test_wikipedia_api_error_is_a_download_error(tmp_path):
+    respx.get("https://en.wikipedia.org/w/api.php").mock(
+        return_value=httpx.Response(
+            200,
+            json={"error": {"code": "ratelimited", "info": "Too many requests"}},
+        )
+    )
+    entry = make_entry(
+        resolver="wikipedia",
+        url="https://en.wikipedia.org/w/api.php",
+        params={"wiki": "en", "titles": ["List of naval battles"]},
+    )
+    with _fast_client() as client:
+        with pytest.raises(core.DownloadError) as excinfo:
+            harvesters.HARVESTERS["wikipedia"](
+                entry, client, tmp_path, prior_files={}, force=False, dry_run=False
+            )
+    assert "ratelimited" in str(excinfo.value)
 
 
 # --- wikidata -------------------------------------------------------------

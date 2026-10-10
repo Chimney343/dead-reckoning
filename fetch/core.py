@@ -332,6 +332,28 @@ class HttpClient:
 # --- download -------------------------------------------------------------
 
 
+class NullReporter:
+    """Receives download progress events and ignores them.
+
+    ``fetch.progress.ProgressReporter`` implements the same methods.
+    """
+
+    def entry_start(self, entry) -> None: ...
+
+    def file_start(self, filename: str, total: int | None, resume_from: int = 0) -> None: ...
+
+    def advance(self, n: int) -> None: ...
+
+    def file_end(self) -> None: ...
+
+    def entry_done(self) -> None: ...
+
+    def write(self, message: str) -> None:
+        print(message)
+
+    def close(self) -> None: ...
+
+
 def _content_length(response: httpx.Response) -> int | None:
     value = response.headers.get("content-length")
     if value is None:
@@ -366,6 +388,7 @@ def _download_one(
     dest_dir: Path,
     prior: dict,
     force: bool,
+    reporter: NullReporter,
 ) -> DownloadResult:
     url = spec.urls[0]
     dest = dest_dir / spec.filename
@@ -428,11 +451,19 @@ def _download_one(
     last_modified = response.headers.get("Last-Modified")
     status = response.status_code
 
+    length = _content_length(response)
+    reporter.file_start(
+        spec.filename, None if length is None else resume_from + length, resume_from
+    )
     mode = "ab" if resume_from else "wb"
-    with open(part, mode) as fh:
-        for chunk in response.iter_bytes(STREAM_CHUNK):
-            fh.write(chunk)
-    response.close()
+    try:
+        with open(part, mode) as fh:
+            for chunk in response.iter_bytes(STREAM_CHUNK):
+                fh.write(chunk)
+                reporter.advance(len(chunk))
+    finally:
+        reporter.file_end()
+        response.close()
 
     if dest.exists():
         dest.unlink()
@@ -503,10 +534,11 @@ def download_file(
     dest_dir: Path | str,
     prior: dict | None = None,
     force: bool = False,
+    reporter: NullReporter | None = None,
 ) -> DownloadResult:
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     prior = prior or {}
     if spec.merge == "geojson":
         return _download_geojson(client, spec, dest_dir, prior, force)
-    return _download_one(client, spec, dest_dir, prior, force)
+    return _download_one(client, spec, dest_dir, prior, force, reporter or NullReporter())

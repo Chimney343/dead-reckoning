@@ -32,6 +32,9 @@ def build_parser() -> argparse.ArgumentParser:
     get_cmd.add_argument(
         "--dry-run", action="store_true", help="resolve and print, download nothing"
     )
+    get_cmd.add_argument(
+        "--no-progress", action="store_true", help="no progress bars or ETA (plain log lines)"
+    )
 
     extract_cmd = sub.add_parser("extract", help="unpack archives for one source")
     extract_cmd.add_argument("id")
@@ -81,6 +84,7 @@ def cmd_get(entries, args) -> int:
             include_large=args.large,
             force=args.force,
             dry_run=args.dry_run,
+            progress=not args.no_progress,
         )
     return 0
 

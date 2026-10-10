@@ -25,6 +25,7 @@ def fetch_entry(
     *,
     force: bool = False,
     dry_run: bool = False,
+    reporter: core.NullReporter | None = None,
 ) -> dict:
     if entry.status in {"manual", "skip"}:
         return {"id": entry.id, "status": entry.status, "files": {}}
@@ -62,7 +63,9 @@ def fetch_entry(
         resolver_input = {}
         for spec in specs:
             prior = prior_files.get(spec.filename, {})
-            result = core.download_file(client, spec, dest_dir, prior=prior, force=force)
+            result = core.download_file(
+                client, spec, dest_dir, prior=prior, force=force, reporter=reporter
+            )
             files[spec.filename] = {**result.as_provenance(), "skipped": result.skipped}
             resolver_input.update(spec.meta)
 
@@ -106,20 +109,34 @@ def fetch_entries(
     force: bool = False,
     dry_run: bool = False,
     log=print,
+    progress: bool = False,
 ) -> list[dict]:
     selected = manifest.select(entries, groups=groups, ids=ids, include_large=include_large)
     to_fetch = [e for e in selected if e.status not in {"manual", "skip"}]
     for line in plan_lines(to_fetch, client.contact):
         log(line)
+    reporter: core.NullReporter = core.NullReporter()
+    if progress and not dry_run and to_fetch:
+        from .progress import ProgressReporter
+
+        reporter = ProgressReporter(to_fetch, root, force=force)
+        log = reporter.write  # keep log lines from tearing the bars
     results = []
-    for entry in selected:
-        if entry.status in {"manual", "skip"}:
-            log(f"skip   {entry.id} ({entry.status})")
-            continue
-        log(f"fetch  {entry.id} [{entry.group}/{entry.resolver}]")
-        results.append(
-            fetch_entry(entry, client, root, force=force, dry_run=dry_run)
-        )
+    try:
+        for entry in selected:
+            if entry.status in {"manual", "skip"}:
+                log(f"skip   {entry.id} ({entry.status})")
+                continue
+            log(f"fetch  {entry.id} [{entry.group}/{entry.resolver}]")
+            reporter.entry_start(entry)
+            results.append(
+                fetch_entry(
+                    entry, client, root, force=force, dry_run=dry_run, reporter=reporter
+                )
+            )
+            reporter.entry_done()
+    finally:
+        reporter.close()
     return results
 
 

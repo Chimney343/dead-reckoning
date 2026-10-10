@@ -250,27 +250,25 @@ The agreed run order is: ship smoke test → Tier A → **actions** → fleets �
 
 ### 5.2 Hard rules
 
-1. **No network.** Never crawl threedecks.org, never run `scripts/fetch_fixtures.py`, and never fetch a Three Decks URL by any means. Every test runs offline, against fixtures or against `FakeSite` on 127.0.0.1. Live runs belong to the operator (section 9).
-2. **Never loosen politeness.**
+1. **Never loosen politeness.**
    - Don't change any setting in `threedecks.politeness.PROTECTED`, or `HTTPCACHE_*`, `DOWNLOADER_MIDDLEWARES`, `EXTENSIONS` or the `THREEDECKS_*` block and window settings.
    - Don't change the behaviour of `middlewares.py`, `cache.py`, `wba.py`, `extensions.py` or `lock.py`. New page kinds inherit all of it.
    - Don't define `custom_settings` on any spider.
    - Only the test harness may override the delay with `-s`, as it does today.
-3. **Never commit scraped content.**
+2. **Never commit scraped content.**
    - `tests/fixtures/real/` and `data/` stay gitignored.
    - Golden assertions go in test code.
    - Write synthetic fixtures by hand, kept minimal, from section 3. Never copy real HTML into them.
-4. **No email addresses** in code, tests or docs. The contact comes from `THREEDECKS_CONTACT`; tests use `test@example.org`.
-5. **Don't change the `frontier` or `ships` table schemas.**
-6. **Keep it separate.**
+3. **No email addresses** in code, tests or docs. The contact comes from `THREEDECKS_CONTACT`; tests use `test@example.org`.
+4. **Don't change the `frontier` or `ships` table schemas.**
+5. **Keep it separate.**
    - Don't create, import or modify anything fleet-specific: `parsing/fleets.py`, `spiders/fleets.py`, fleet items, fleet tables.
    - Shared files (`items.py`, `state.py`, `pipelines.py`, `resume_harness.py`, the scripts) only gain **additions**. Never restructure code the fleets plan may also add to.
-7. **TDD.** Write the failing test first, see it fail, then implement.
-8. **Ship behaviour stays identical**, except where S1 says otherwise (`crawl.py` tiers, `fetch_fixtures.py` lock). An existing test may change only where a task lists the change.
-9. **Stop and report rather than guess** if any of these happens:
+6. **TDD.** Write the failing test first, see it fail, then implement.
+7. **Ship behaviour stays identical**, except where S1 says otherwise (`crawl.py` tiers, `fetch_fixtures.py` lock). An existing test may change only where a task lists the change.
+8. **Stop and report rather than guess** if any of these happens:
    - a real fixture contradicts a number in section 3
    - an existing test needs an unlisted change
-   - anything seems to need the network
    - the baseline doesn't match
 
 ### 5.3 Environment
@@ -714,7 +712,7 @@ All changes are additions. Don't restructure what the ship code or the fleets pl
   - `show_battle` URLs are reparsed with `parse_action`.
   - A cached 3xx whose `Location` contains `display_type=select_action` is `not_found`. Write `is_action_redirect` next to `is_search_redirect`.
   - A cached `select_action` POST response takes its page key from the parsed "Showing Page N", because every index POST has the same URL. The cached GET of `select_action`, the redirect target, is skipped: it isn't an index page of ours.
-  - The not-found and completeness rules are the spider's. No network.
+  - The not-found and completeness rules are the spider's.
 - **`export.py`:** adds four files.
   - `actions.jsonl` and `action_index.jsonl`.
   - `actions.parquet`, one row per action:
