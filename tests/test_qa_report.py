@@ -87,6 +87,22 @@ def test_report_lists_dates_the_source_got_wrong(tmp_path):
     assert "- ship 7, Launched: 60.1739" in markdown
 
 
+def test_report_ignores_numbers_that_only_look_like_dates(tmp_path):
+    from threedecks.items import BaseRow
+
+    store = StateStore(tmp_path / "state.sqlite")
+    store.save_ship(ShipRecord(
+        td_id=8, name="Eight", url="u8",
+        base_rows=[BaseRow(label="Nominal Guns", text="90"),
+                   BaseRow(label="Crew", text="400"),
+                   BaseRow(label="Fate", text="1810")],
+    ))
+    store.close()
+
+    report, _markdown = build_report(tmp_path)
+    assert report["unparseable_dates"] == []
+
+
 def test_report_reports_action_asymmetry(tmp_path):
     store = StateStore(tmp_path / "state.sqlite")
     store.save_ship(

@@ -16,10 +16,16 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from threedecks.parsing.ship_page import LABEL_CATEGORIES
 from threedecks.state import StateStore
 
 # A value shaped like a date (optional qualifier, digits, dots and slashes).
 DATE_SHAPED = re.compile(r"^(?:bef\.?|aft\.?|c\.)?\s*\d[\d./]*$", re.IGNORECASE)
+
+# Base-row label categories that never carry a date. A bare number under one of
+# these (Nominal Guns: 90, Crew: 400) only looks date-shaped and is not a broken
+# date, unlike a Launched/Captured/etc. row the parser could not read.
+NON_DATE_CATEGORIES = frozenset({"attribute", "link"})
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "threedecks"
 
@@ -321,8 +327,11 @@ def unparseable_dates(ships: list[dict]) -> list[dict]:
     for ship in ships:
         for row in ship.get("base_rows", []):
             text = (row.get("text") or "").strip()
-            if row.get("date") is None and DATE_SHAPED.match(text):
-                found.append({"td_id": ship["td_id"], "where": row["label"], "raw": text})
+            if row.get("date") is not None or not DATE_SHAPED.match(text):
+                continue
+            if LABEL_CATEGORIES.get(row.get("label")) in NON_DATE_CATEGORIES:
+                continue  # a bare number (Nominal Guns: 90), not a date
+            found.append({"td_id": ship["td_id"], "where": row["label"], "raw": text})
         for event in ship.get("history", []):
             date = event.get("date") or {}
             raw = (date.get("raw") or "").strip()

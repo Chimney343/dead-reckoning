@@ -74,12 +74,19 @@ threedecks-crawl-2000 *args:
 threedecks-crawl-all *args:
     uv run python scripts/crawl_all.py {{ args }}
 
+# Write the QA report and the exports (ships, captures, actions, fleets) from data/threedecks/state.sqlite
+threedecks-export:
+    uv run python scripts/qa_report.py --out data/threedecks/exports/qa_report.md
+    uv run python scripts/export.py
+
 # Scrape every Three Decks tier: ships to the end (crawl-all), then all actions, then all fleets.
+# crawl-all exports before the actions/fleets crawl, so export is run again at the end.
 # Stops on a block like crawl-all; rerun to resume. Shared crawl flags (--allow-sleep, --daily-pages, --window, -s ...) pass through to each phase
 threedecks-everything *args:
     uv run python scripts/crawl_all.py {{ args }}
     uv run python scripts/crawl.py --tiers actions {{ args }}
     uv run python scripts/crawl.py --tiers fleets {{ args }}
+    just threedecks-export
 
 # Rebuild the ship-losses analysis (extract, geocode, ownership, dedupe, map); extra args pass through
 ship-losses *args:
