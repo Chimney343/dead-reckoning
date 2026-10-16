@@ -173,6 +173,73 @@ def test_an_extra_tier_runs_below_any_ship_target(monkeypatch, tmp_path):
     assert any(arg == "THREEDECKS_SHIP_TARGET=50" for arg in ship_command)
 
 
+def _finished_run(tmp_path, spider, *, index_rows=False, pending=False):
+    """A stored run that closed 'finished' for ``spider``, with an optional crawled
+    index and optional still-pending work."""
+    from threedecks.items import ActionIndexRow, FleetIndexRow
+    from threedecks.state import StateStore
+
+    with StateStore(tmp_path / "state.sqlite") as store:
+        run = store.start_run(spider)
+        if index_rows and spider == "actions":
+            store.save_action_index_page("1", [ActionIndexRow(battle_id=1, name="Battle")])
+        elif index_rows and spider == "fleets":
+            store.save_fleet_index([FleetIndexRow(fleet_id=1, name="Channel Fleet")])
+        if pending and spider == "actions":
+            store.seed_pages("action", ["2"], discovered_by="action_index")
+        elif pending and spider == "fleets":
+            store.seed_pages("fleet", ["2"], discovered_by="fleet_index")
+        store.finish_run(run, close_reason="finished", pages_fetched=1)
+
+
+def test_a_finished_actions_run_is_only_trusted_once_its_index_was_crawled(tmp_path):
+    _finished_run(tmp_path, "actions")  # the index was never fetched
+    assert crawl.tier_finished(tmp_path, "actions") is None
+    _finished_run(tmp_path, "actions", index_rows=True)
+    assert crawl.tier_finished(tmp_path, "actions") is not None
+
+
+def test_a_finished_actions_run_with_work_still_pending_is_not_trusted(tmp_path):
+    _finished_run(tmp_path, "actions", index_rows=True, pending=True)
+    assert crawl.tier_finished(tmp_path, "actions") is None
+
+
+def test_a_finished_fleets_run_is_only_trusted_once_its_index_was_crawled(tmp_path):
+    _finished_run(tmp_path, "fleets")
+    assert crawl.tier_finished(tmp_path, "fleets") is None
+    _finished_run(tmp_path, "fleets", index_rows=True)
+    assert crawl.tier_finished(tmp_path, "fleets") is not None
+
+
+def test_a_finished_ship_tier_needs_no_index(tmp_path):
+    _finished_run(tmp_path, "captures")
+    assert crawl.tier_finished(tmp_path, "captures") is not None
+
+
+def test_a_finished_actions_run_without_an_index_is_rerun(monkeypatch, tmp_path):
+    """A 'finished' stamp from a run that never crawled the index must not skip the
+    tier; the driver runs it and says why."""
+    _finished_run(tmp_path, "actions")
+    calls: list[str] = []
+
+    def fake_run_tier(spider, *args, **kwargs):
+        calls.append(spider)
+        return crawl.TierResult(code=0)
+
+    monkeypatch.setattr(crawl, "run_tier", fake_run_tier)
+    monkeypatch.setattr(crawl, "ship_count", lambda data_dir: 0)
+
+    log = crawl.Log(tmp_path / "log.txt")
+    try:
+        assert crawl.crawl(_fake_args(), ["actions"], [], {}, tmp_path, log) == 0
+    finally:
+        log.close()
+    assert calls == ["actions"]
+    assert "running actions: its last run reported 'finished'" in (
+        tmp_path / "log.txt"
+    ).read_text(encoding="utf-8")
+
+
 def test_a_page_cap_close_ends_the_chain_cleanly(monkeypatch, tmp_path):
     monkeypatch.setattr(crawl, "run_tier", lambda *a, **k: crawl.TierResult(code=0))
     monkeypatch.setattr(crawl, "tier_finished", lambda data_dir, spider: None)

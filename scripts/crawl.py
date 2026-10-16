@@ -457,10 +457,57 @@ def run_tier(spider: str, target: int | None, overrides: dict[str, str], data_di
     return result
 
 
+# The pages a downloaded extra tier must hold: its index table, and the page kinds
+# the index seeds (itself and the entities). Used to tell "really downloaded" from
+# "a run once said finished".
+TIER_PAGES = {
+    "actions": ("action_index", ("action_index", "action")),
+    "fleets": ("fleet_index", ("fleet_index", "fleet")),
+}
+
+
+def tier_downloaded(data_dir: Path, spider: str) -> bool:
+    """Whether the tier's pages are really in the store: its index holds rows and no
+    page is left pending or in error.
+
+    The ``runs`` stamp can lie -- a targeted smoke or an early empty run reports
+    ``finished`` without having crawled the tier -- but the stored rows cannot. Ship
+    tiers have no such index and are always ready.
+    """
+    pages = TIER_PAGES.get(spider)
+    if pages is None:
+        return True
+    index_table, kinds = pages
+    conn = sqlite3.connect(str(data_dir / "state.sqlite"))
+    try:
+        rows = conn.execute(
+            f"SELECT COUNT(*) FROM {index_table}"  # noqa: S608 - fixed literal table name
+        ).fetchone()[0]
+        remaining = conn.execute(
+            "SELECT COUNT(*) FROM page_frontier WHERE kind IN (?, ?) "
+            "AND status IN ('pending', 'error')",
+            kinds,
+        ).fetchone()[0]
+    except sqlite3.OperationalError:  # no state database yet: nothing was crawled
+        return False
+    finally:
+        conn.close()
+    return rows > 0 and remaining == 0
+
+
 def tier_finished(data_dir: Path, spider: str) -> str | None:
-    """When the tier's last run finished its list, or None."""
+    """When the tier's last run finished its list, or None.
+
+    A ``finished`` close is only trusted for an extra tier once that tier is really
+    downloaded. Otherwise a run that did nothing (or a targeted smoke) would stamp
+    the tier done and every later crawl would skip it, leaving its exports empty.
+    """
     run = last_run(data_dir, spider)
-    return run["finished_at"] if run and run["close_reason"] == "finished" else None
+    if not (run and run["close_reason"] == "finished"):
+        return None
+    if not tier_downloaded(data_dir, spider):
+        return None
+    return run["finished_at"]
 
 
 def wait_minutes(minutes: float, log: Log) -> bool:
@@ -584,6 +631,15 @@ def crawl(args, tiers, network_waits, overrides, data_dir: Path, log: Log, windo
                 verdict = f"target of {args.ships} reached"
                 break
             finished_at = tier_finished(data_dir, spider)
+            if finished_at is None:
+                previous = last_run(data_dir, spider) or {}
+                if previous.get("close_reason") == "finished":
+                    log.say(
+                        f"running {spider}: its last run reported 'finished' at "
+                        f"{previous.get('finished_at')}, but the pages are not all "
+                        "downloaded yet (missing index rows or work still pending), so "
+                        "that run did not finish the tier"
+                    )
             if finished_at and not args.rerun:
                 log.say(f"skipping {spider}: it finished at {finished_at} (--rerun replays it)")
                 continue
